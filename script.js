@@ -6,6 +6,7 @@ const SFX={paddle:()=>tone(460,.04),wall:()=>tone(240,.025,'square',.035),score:
 // ═══ CONSTANTS ═══
 const GW=800,GH=500,BALL_SZ=10,PAD_W=12,BASE_PAD_H=72;
 const PX_HOME=40,EX=GW-40,HORIZ=50,PTS_WIN=5,MAX_WAVE=12,TRAIL=16,BASE_SPD=340;
+const FOCUS_SPEED_MULT=0.4; // Focus mode (shift/space held) slows movement for precision
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
 const rng=(a,b)=>a+Math.random()*(b-a);
@@ -367,19 +368,24 @@ function update(dt){
   if(g.blizzardT>0&&g.bx>GW*.4)twMul*=0.3;
 
   // Player - compute velocity from last frame position
-  const sp=g.pSpd,hMax=HORIZ*g.horizMul;
+  // Focus mode: hold shift or space to slow movement for precision
+  const focusActive=keysDown['shift']||keysDown[' '];
+  const baseSp=g.pSpd,hMax=HORIZ*g.horizMul;
+  const sp=focusActive?baseSp*FOCUS_SPEED_MULT:baseSp;
   if(keysDown['w']||keysDown['arrowup'])g.py-=sp*dt;
   if(keysDown['s']||keysDown['arrowdown'])g.py+=sp*dt;
   // VoidWalk: paddle teleports toward ball
   if(g.voidWalk&&g.bvx<0){g.py=lerp(g.py,g.by,dt*12);}
   g.py=clamp(g.py,g.ph/2,GH-g.ph/2);
-  if(keysDown['a']||keysDown['arrowleft'])g.px-=sp*.55*dt;
-  if(keysDown['d']||keysDown['arrowright'])g.px+=sp*.55*dt;
+  const horizSp=focusActive?sp*.55:baseSp*.55;
+  if(keysDown['a']||keysDown['arrowleft'])g.px-=horizSp*dt;
+  if(keysDown['d']||keysDown['arrowright'])g.px+=horizSp*dt;
   if(!keysDown['a']&&!keysDown['arrowleft']&&!keysDown['d']&&!keysDown['arrowright'])g.px=lerp(g.px,PX_HOME,dt*4);
   g.px=clamp(g.px,PX_HOME-hMax,PX_HOME+hMax);
   // Track paddle velocity for momentum transfer on hit
   g.pVelY=(g.py-g.prevPy)/Math.max(dt,0.001);
   g.prevPy=g.py;
+  g.focusActive=focusActive; // Store for draw function
 
   // Ball movement with time warp (skip during timestop/lightning stun)
   const ballFrozen=g.tsT>0||g.eAbilPhase==='strike'||g.startPause>0;
@@ -843,10 +849,12 @@ function draw(ctx,cw,ch){
   // Placed wall
   if(g.placedWall){const w=g.placedWall,pulse=.5+.5*Math.sin(g.t*5);ctx.shadowColor=col.g+'0.6)';ctx.shadowBlur=16*pulse;ctx.fillStyle=col.g+(.4+.3*pulse)+')';ctx.fillRect(w.x-4,w.y-30,8,60);ctx.shadowBlur=0;}
 
+  // Focus mode indicator (dashed border when shift/space held)
+  if(g.focusActive){ctx.globalAlpha=.3+.1*Math.sin(g.t*8);ctx.strokeStyle=col.p;ctx.lineWidth=1;ctx.setLineDash([2,4]);ctx.strokeRect(g.px-PAD_W/2-8,g.py-g.ph/2-8,PAD_W+16,g.ph+16);ctx.setLineDash([]);ctx.globalAlpha=1;}
   // Player paddle
   const pGlow=g.hitFlash>0?20:6;ctx.shadowColor=col.g+'0.6)';ctx.shadowBlur=pGlow;ctx.fillStyle=col.p;
   ctx.fillRect(g.px-PAD_W/2,g.py-g.ph/2,PAD_W,g.ph);ctx.shadowBlur=28;ctx.fillStyle=col.g+(g.hitFlash>0?.06:.02)+')';ctx.fillRect(g.px-PAD_W/2-6,g.py-g.ph/2-6,PAD_W+12,g.ph+12);ctx.shadowBlur=0;
-  if(g.smashNext||g.curveNext||g.thunderNext){const p=.2+.2*Math.sin(g.t*11);ctx.strokeStyle=col.g+p+')';ctx.lineWidth=1.5;ctx.shadowColor=col.g+'0.35)';ctx.shadowBlur=10;ctx.strokeRect(g.px-PAD_W/2-5,g.py-g.ph/2-5,PAD_W+10,g.ph+10);ctx.shadowBlur=0;}
+  if(g.smashNext||g.curveNext||g.thunderNext||g.phaseNext){const p=.2+.2*Math.sin(g.t*11);ctx.strokeStyle=col.g+p+')';ctx.lineWidth=1.5;ctx.shadowColor=col.g+'0.35)';ctx.shadowBlur=10;ctx.strokeRect(g.px-PAD_W/2-5,g.py-g.ph/2-5,PAD_W+10,g.ph+10);ctx.shadowBlur=0;}
 
   // Doppelganger paddle
   if(g.doppel){const dpX=EX-60;ctx.globalAlpha=.3+.15*Math.sin(g.t*3);ctx.shadowColor=col.g+'0.4)';ctx.shadowBlur=12;ctx.fillStyle=col.p;ctx.fillRect(dpX-PAD_W/2,g.py-g.ph*.4,PAD_W,g.ph*.8);ctx.shadowBlur=0;ctx.globalAlpha=1;}
@@ -1210,6 +1218,8 @@ function draw(ctx,cw,ch){
   ctx.fillStyle=rdy?col.p:'#333';ctx.fillRect(14,GH-32,100*fill,3);ctx.shadowBlur=0;
   }
   ctx.fillStyle=rdy?'#ccc':'#555';ctx.font='8px "Share Tech Mono",monospace';ctx.textAlign='left';if(g.padId!=='classic'){ctx.fillText('[Q] '+g.pad.abil+(rdy?' RDY':' '+g.abCD.toFixed(1)+'s'),14,GH-37);}
+  // Focus mode indicator
+  if(g.focusActive){ctx.fillStyle=col.p;ctx.font='8px "Share Tech Mono",monospace';ctx.textAlign='left';ctx.fillText('FOCUS',14,GH-50);}
   if(g.combo>=3){ctx.fillStyle=col.g+(.4+.25*Math.sin(g.t*5))+')';ctx.font='10px "Share Tech Mono",monospace';ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText(g.combo+'x',GW-14,GH-6);}
 
   // Active abilities indicator (right side)
