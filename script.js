@@ -140,7 +140,7 @@ const ALL_CARDS = [
 	{
 		id: "bounceback",
 		name: "SNAPBACK",
-		desc: "Ball speeds up 15% each time it bounces off a wall",
+		desc: "Ball speeds up an EXTRA 15% each time it bounces off a wall",
 		tier: "uncommon",
 		type: "ability",
 		fn: (s) => {
@@ -503,7 +503,7 @@ function getServePauseForSpeed(spd) {
 
 export function resetBall(g, dir) {
 	const preResetSpd = Math.max(Math.hypot(g.bvx, g.bvy), g.ballSpd || BASE_SPD);
-	g.rallyBase = g.bs;
+	g.rallyBase = Math.max(g.bs, preResetSpd * 0.3);
 	g.rallyHits = 0;
 	g.ballSpd = g.rallyBase;
 	g.bx = GW / 2;
@@ -528,7 +528,7 @@ export function resetBall(g, dir) {
 	g.doppelBuf = [];
 	g.doppelY = g.py;
 
-	// the very best enemies should wear down over the course of a long
+	// The very best enemies should wear down over the course of a long
 	// exchange. after each rally we nudge their reaction speed and paddle
 	// velocity slightly toward easier values, giving a skilled player a
 	// fighting chance if they can keep the ball alive. we only apply the
@@ -542,7 +542,7 @@ export function resetBall(g, dir) {
 	// base decay per rank: best (SSS) 0.985, each step down subtracts 0.005
 	const baseDecay = 0.985 - (maxIdx - diffIdx) * 0.005;
 	// only worsen based on how fast the ball is moving relative to base
-	const speedFactor = preResetSpd / BASE_SPD;
+	const speedFactor = Math.max(1, preResetSpd / g.bs);
 	// apply the decay exponentiated by speedFactor so faster rallies drain AI more
 	const aiDecay = baseDecay ** speedFactor;
 	g.aiSpd = Math.max(80, g.aiSpd * aiDecay);
@@ -555,7 +555,8 @@ function newGame(pid, wv, sv, eUps, oppCfg) {
 	const am = sv?.aiMod ?? 1;
 	const rankSpdMul = getBaseBallSpeedForDiff(cfg.diff) / BASE_SPD;
 	const bs = (sv?.bs ?? BASE_SPD) * rankSpdMul;
-	const initServePause = getServePauseForSpeed(bs);
+	const rallyBase = sv?.rallyBase ?? bs;
+	const initServePause = getServePauseForSpeed(rallyBase);
 	const _iDir = Math.random() > 0.5 ? 1 : -1,
 		_iVy = rng(-160, 160);
 	const ng = {
@@ -572,8 +573,8 @@ function newGame(pid, wv, sv, eUps, oppCfg) {
 		startPause: 1.0,
 		startPauseMax: 1.0,
 		bs,
-		rallyBase: bs,
-		ballSpd: bs,
+		rallyBase,
+		ballSpd: rallyBase,
 		rallyHits: 0,
 		trail: [],
 		px: PX_HOME,
@@ -860,6 +861,7 @@ function newGame(pid, wv, sv, eUps, oppCfg) {
 function saveGame(g) {
 	return {
 		bs: g.bs / (g.rankSpdMul || 1),
+		rallyBase: g.rallyBase / (g.rankSpdMul || 1),
 		ph: g.ph,
 		pSpd: g.pSpd,
 		cdMul: g.cdMul,
@@ -997,8 +999,7 @@ function update(dt) {
 	if (g.startPause > 0 && !holdFoolServe) {
 		g.startPause -= dt;
 		if (g.startPause <= 0) {
-			const spd = g.rallyBase * getRallyMul(g.rallyHits);
-			g.ballSpd = spd;
+			const spd = g.ballSpd; // Already set by resetBall based on previous rally
 			g.bvx = g.pendingDir * spd;
 			g.bvy = typeof g.pendingVy === "number" ? g.pendingVy : rng(-160, 160);
 		}
@@ -1454,10 +1455,9 @@ function update(dt) {
 	}
 	// Berserker: reset stacks when enemy scores (handled in scoring section)
 
-	const rallyMul = getRallyMul(g.rallyHits);
-	g.ballSpd = Math.min(g.rallyBase * rallyMul, MAX_BALL_SPD);
-
-	// Time warp: ball speed modifier based on x position
+	const rallyMul = g.ballSpd / (g.rallyBase || 1);
+	g.ballSpd = Math.min(g.ballSpd, MAX_BALL_SPD);
+	g.rallyBase = Math.min(g.rallyBase, MAX_BALL_SPD);
 	let twMul = 1;
 	if (g.timewarp) {
 		const nx = g.bx / GW; // 0=left, 1=right
@@ -1596,6 +1596,20 @@ function update(dt) {
 		g.bvy = Math.abs(g.bvy);
 		SFX.wall();
 		addSparks(g, g.bx, 0, 4, 60, col.t);
+		// Increase speed by 5% (add) -> So wait, 5% of base speed or current speed?
+		// "increase speed by 5% (add)" usually means +5% flat of base speed or just current = current + 0.05 * base.
+		// Actually, let's just do `current * 1.05` but the wording says "increase speed by 5% (add)". If it's add, maybe +5% of base speed? `+ 0.05 * g.bs`?
+		// "on wall hit increase speed by 5% (add)" => could be `g.ballSpd += g.bs * 0.05`? 
+		// Or +0.05 to the multiplier. Let's do `g.ballSpd += g.bs * 0.05`. Wait, let's look at getRallyMul: "every hit on a paddle, increase speed by 1.04x (multiplication), and on wall hit increase speed by 5% (add)".
+		// So `g.ballSpd *= 1.05` is multiplicative. Let's make it additive: `g.ballSpd += g.bs * 0.05; g.rallyBase += g.bs * 0.05;`
+		// Add 5% of base speed
+		const addedSpd = g.bs * 0.05;
+		const s = Math.hypot(g.bvx, g.bvy);
+		const newSpd = s + addedSpd;
+		g.bvx *= newSpd / s;
+		g.bvy *= newSpd / s;
+		g.ballSpd += addedSpd;
+		g.rallyBase += addedSpd;
 		ricoB(g);
 	}
 	if (g.by + bs2 > GH) {
@@ -1603,6 +1617,14 @@ function update(dt) {
 		g.bvy = -Math.abs(g.bvy);
 		SFX.wall();
 		addSparks(g, g.bx, GH, 4, 60, col.t);
+		// Add 5% of base speed
+		const addedSpd = g.bs * 0.05;
+		const s = Math.hypot(g.bvx, g.bvy);
+		const newSpd = s + addedSpd;
+		g.bvx *= newSpd / s;
+		g.bvy *= newSpd / s;
+		g.ballSpd += addedSpd;
+		g.rallyBase += addedSpd;
 		ricoB(g);
 	}
 	if (g.placedWall) {
@@ -1725,6 +1747,8 @@ function update(dt) {
 			const finalAng = Math.atan2(g.bvy, g.bvx); // used by afterimage
 			g.combo++;
 			g.rallyHits++;
+			g.rallyBase *= 1.04;
+			g.ballSpd *= 1.04;
 			g.flash = Math.max(g.flash, 0.18);
 			g.hitFlash = 1;
 			g.shake = Math.max(g.shake, 0.03);
@@ -1810,7 +1834,8 @@ function update(dt) {
 			if (g.berserker) {
 				g.berserkerStacks = (g.berserkerStacks || 0) + 1;
 				g.bs = g._berserkerBase * (1 + g.berserkerStacks * 0.08);
-				g.ballSpd = g.bs * getRallyMul(g.rallyHits);
+				g.ballSpd *= 1.08; // Just multiply directly? 
+				// Actually wait. Berserker adds to base speed. Let's just multiply base.
 			}
 			// Overcharge (secret): every 3rd consecutive hit, ball pierces
 			if (g.overcharge) {
@@ -1856,6 +1881,8 @@ function update(dt) {
 			g.bx = EX - PAD_W / 2 - bs2 - 2;
 			g.combo = 0;
 			g.rallyHits++;
+			g.rallyBase *= 1.04;
+			g.ballSpd *= 1.04;
 			if (g.chaos) g.bs = Math.min(g.bs * 1.04, 600);
 			// enemy hit feels cooler (bluer sparks, a touch more shake)
 			SFX.paddle();
@@ -1885,12 +1912,13 @@ function update(dt) {
 			if (g.masterSkill && g._masterHitBoosted) {
 				g._masterHitBoosted = false;
 				g.bs = Math.min(g.bs * 1.2, MAX_BALL_SPD); // permanent 20% base increase per rally hit
-				const resetSpd = g.bs * getRallyMul(g.rallyHits);
+				const resetSpd = Math.max(g.bs, g.rallyBase);
 				const cur = Math.hypot(g.bvx, g.bvy);
 				if (cur > 0.1) {
 					const r = resetSpd / cur;
 					g.bvx *= r;
 					g.bvy *= r;
+					g.ballSpd = resetSpd;
 				}
 			}
 			// Spin return: if queued, apply curve to the return
@@ -2509,8 +2537,8 @@ function update(dt) {
 		}
 		if (g.overdriveT > 0) {
 			g.overdriveT -= dt;
-			g.ballSpd = g.bs * getRallyMul(g.rallyHits) * 2;
-			if (g.overdriveT <= 0) g.ballSpd = g.bs * getRallyMul(g.rallyHits);
+			g.ballSpd = g.rallyBase * 2;
+			if (g.overdriveT <= 0) g.ballSpd = g.rallyBase;
 		}
 		if (g.cloneT > 0 || g.foolClone) {
 			if (g.cloneT > 0) g.cloneT -= dt;
@@ -2945,9 +2973,11 @@ function update(dt) {
 function ricoB(gg) {
 	if (!gg.rico) return;
 	const s = Math.hypot(gg.bvx, gg.bvy);
-	const n = Math.min(s * 1.08, gg.bs * 2.5);
+	const n = Math.min(s * 1.15, MAX_BALL_SPD);
 	gg.bvx *= n / s;
 	gg.bvy *= n / s;
+	gg.ballSpd = n;
+	gg.rallyBase = n;
 }
 
 // ═══ DRAW ═══
@@ -4658,7 +4688,7 @@ function draw(ctx, cw, ch) {
 		ctx.fillText("SAVE x" + g.shields, 14, GH - 19);
 	}
 	if (g.rallyHits > 0) {
-		const spdPct = Math.round((getRallyMul(g.rallyHits) - 1) * 100);
+		const spdPct = Math.round(((g.ballSpd / (g.bs || 1)) - 1) * 100);
 		const spdA = g.rallyHits >= 4 ? 0.5 + 0.2 * Math.sin(g.t * 6) : 0.35;
 		ctx.fillStyle = col.g + spdA + ")";
 		ctx.font = '8px "Share Tech Mono",monospace';
@@ -4774,7 +4804,7 @@ function draw(ctx, cw, ch) {
 
 		const aDir = g.pendingDir || 1;
 		const pulse = 0.5 + 0.5 * Math.sin(g.t * 8);
-		const spd = g.rallyBase * getRallyMul(g.rallyHits);
+		const spd = g.ballSpd;
 		const pv = typeof g.pendingVy === "number" ? g.pendingVy : 0;
 		const dx = aDir * spd,
 			dy = pv;

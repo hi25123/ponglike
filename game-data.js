@@ -91,9 +91,7 @@ export function pickIncomingThreatY(g, targetX, dir) {
 export function getRallyMul(hits) {
 	if (!hits || hits <= 0) return 1;
 	// First hit gives a noticeable boost, subsequent hits grow more slowly
-	const initial = 1.08; // slightly larger first-hit increase
-	const step = 1.04; // smaller per-hit growth than previous 1.05
-	return initial * step ** Math.max(0, hits - 1);
+	return 1;
 }
 
 // ═══ DIFFICULTY RATINGS ═══
