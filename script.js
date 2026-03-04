@@ -10,7 +10,7 @@ const SFX={
 // ═══ CONSTANTS ═══
 const GW=800,GH=500,BALL_SZ=10,PAD_W=12,BASE_PAD_H=80; // slightly larger base paddles
 const PX_HOME=40,EX=GW-40,HORIZ=50,PTS_WIN=5,MAX_WAVE=12,TRAIL=24,BASE_SPD=340;
-const MAX_BALL_SPD=1100; // hard cap so the ball never becomes visually impossible to react to
+const MAX_BALL_SPD=Infinity; // intentionally uncapped per design
 // Visual/particle caps (raised to allow richer effects)
 const MAX_SPARKS=350,MAX_MULTI=8,MAX_BOLTS=16;
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
@@ -30,67 +30,136 @@ function getRallyMul(hits){
 
 // ═══ DIFFICULTY RATINGS ═══
 const DIFF_RANKS=['F','E','D','C','B','A','S','SS','SSS'];
-const DIFF_COLORS={F:'#446644','F-':'#8c8c8c',E:'#558855',D:'#669966',C:'#88aa88',B:'#66aaff',A:'#5588ff',S:'#ffaa44',SS:'#ff6644',SSS:'#ff44ff'};
-const DIFF_GLOW={F:'68,102,68','F-':'140,140,140',E:'85,136,85',D:'102,153,102',C:'136,170,136',B:'102,170,255',A:'85,136,255',S:'255,170,68',SS:'255,102,68',SSS:'255,68,255'};
+const DIFF_COLORS={F:'#446644','F-':'#8c8c8c','Ω':'#e6dcff',E:'#558855',D:'#669966',C:'#88aa88',B:'#66aaff',A:'#5588ff',S:'#ffaa44',SS:'#ff6644',SSS:'#ff44ff'};
+const DIFF_GLOW={F:'68,102,68','F-':'140,140,140','Ω':'230,220,255',E:'85,136,85',D:'102,153,102',C:'136,170,136',B:'102,170,255',A:'85,136,255',S:'255,170,68',SS:'255,102,68',SSS:'255,68,255'};
 // Reward tier per difficulty
-const DIFF_REWARD={F:'common','F-':'common',E:'common',D:'uncommon',C:'uncommon',B:'rare',A:'rare',S:'epic',SS:'legendary',SSS:'secret'};
+const DIFF_REWARD={F:'common','F-':'common','Ω':'klein',E:'common',D:'uncommon',C:'uncommon',B:'rare',A:'rare',S:'epic',SS:'legendary',SSS:'secret'};
 // Which upgrade rarities are AVAILABLE at each difficulty
-const DIFF_TIERS={F:['common'],'F-':['common'],E:['common','uncommon'],D:['common','uncommon'],C:['common','uncommon','rare'],B:['uncommon','rare'],A:['uncommon','rare','epic'],S:['rare','epic','legendary'],SS:['epic','legendary','mythical'],SSS:['legendary','mythical','secret']};
+const DIFF_TIERS={F:['common'],'F-':['common'],'Ω':['mythical','secret','klein'],E:['common','uncommon'],D:['common','uncommon'],C:['common','uncommon','rare'],B:['uncommon','rare'],A:['uncommon','rare','epic'],S:['rare','epic','legendary'],SS:['epic','legendary','mythical'],SSS:['legendary','mythical','secret','klein']};
 const DIFF_BALL_MUL={
-  'F-':0.82,F:0.88,E:0.92,D:0.96,C:1.0,B:1.05,A:1.1,S:1.16,SS:1.22,SSS:1.3,
+  'F-':1.44,F:1.54,E:1.62,D:1.72,C:1.84,B:1.98,A:2.12,S:2.28,SS:2.45,SSS:2.62,'Ω':2.75,
 };
+const BASE_BALL_SPEED_CAP=760;
 const FOOL_SEQUENCES=['SEER','CLOWN','MAGICIAN','FACELESS','MARIONETTIST','BIZARRO SORCERER','SCHOLAR OF YORE','MIRACLE INVOKER','ATTENDANT OF MYSTERIES','THE FOOL'];
+const FOOL_SEQ_KEY=['seer','clown','magician','faceless','marionettist','bizarro','scholar','miracle','attendant','fool'];
 const FOOL_ASCENT_LINES={
-  SEER:["I already read this outcome.","Your intent is visible before your motion."],
-  CLOWN:["You chose to bully the weak? How noble.","Cruelty masquerading as courage—pathetic."],
-  MAGICIAN:["Watch carefully. You still will not understand.","A misdirection, and your hope disappears."],
-  FACELESS:["You never touched the real me.","Identity is a mask; I own them all."],
-  MARIONETTIST:["Lift your hands. I pull the strings now.","Struggle if you wish; your will is ornamental."],
-  'BIZARRO SORCERER':["Logic bends around my name.","The stage tilts, and you call it fate."],
-  'SCHOLAR OF YORE':["I borrow an older second.","History itself obeys my citation."],
-  'MIRACLE INVOKER':["A miracle is only certainty delayed.","Your victory was revoked."],
-  'ATTENDANT OF MYSTERIES':["The fog is mercy. I could show you everything.","Do not confuse my restraint for weakness."],
-  'THE FOOL':["Bow. THE FOOL has taken the stage.","You wanted a weakling to bully. You found a god in rehearsal."],
+  SEER:["Sequence 9, Seer. Your future submits.","I open one eye, and your path collapses."],
+  CLOWN:["Sequence 8, Clown. Dignity is optional.","Laugh now; I prefer honest fear."],
+  MAGICIAN:["Sequence 7, Magician. Reality is stagecraft.","You saw movement; I changed meaning."],
+  FACELESS:["Sequence 6, Faceless. Names no longer bind.","Find me, if certainty still comforts you."],
+  MARIONETTIST:["Sequence 5, Marionettist. Strings descend.","Gesture all you want; I own direction."],
+  'BIZARRO SORCERER':["Sequence 4, Bizarro Sorcerer. Reason folds.","Rules persist only by my permission."],
+  'SCHOLAR OF YORE':["Sequence 3, Scholar of Yore. Time remembers me.","I borrow an older victory."],
+  'MIRACLE INVOKER':["Sequence 2, Miracle Invoker. Defeat is reversible.","You scored. I disagreed."],
+  'ATTENDANT OF MYSTERIES':["Sequence 1, Attendant. The veil obeys.","I conceal mercy from the unworthy."],
+  'THE FOOL':["Sequence 0, The Fool. Curtain absolute.","A god of paradox takes the board."],
+};
+const FOOL_START_LINES=[
+  "You came looking for weak prey.","Mercy was your first mistake.","The stage was set before you arrived.","Do not confuse silence with fear.",
+  "Your confidence is already behind schedule.","I watched you choose the easy door.","You wanted victory, not truth.",
+  "The curtain rises. Try not to blink.","I am calm because your ending is known.","Step closer. Regret needs distance.","Welcome, challenger. Leave your pride at the edge."
+];
+const FOOL_ENTRY_LINES=[
+  "You crossed the threshold. Now endure what waits behind the mask.",
+  "The audience is silent because your fate has already spoken.",
+  "You did not arrive for victory; you arrived for judgment.",
+  "Stand your ground, if you can. The throne does not move.",
+  "You sought an easy hunt and found a final sequence."
+];
+const FOOL_START_WARNING_LINES=[
+  "You can inflict only one point of damage per wave.",
+  "All your tricks are useless against me.",
+  "I begin at Sequence 9. Your first point forces Sequence 8."
+];
+const FOOL_MECHANIC_LINES=[
+  "I grant you one point of damage per wave, no more.",
+  "I erase extra scoring tricks the moment they touch me.",
+  "I ascend by a sequence every time you score.",
+  "Break my rhythm if you can; I built it to break you."
+];
+const FOOL_DEFEAT_LINES=[
+  "You were warned in plain language.","You chased weakness and found judgment.","Defeat suits your certainty.","Your hands moved; your fate did not.",
+  "Another hunter taught humility.","The easy fight did not exist.","You lost before first contact.","Your final angle was predictable.",
+  "Pride is heavy at the bottom.","I did not need full power.","You broke on your own momentum.","The stage keeps no sympathy.",
+  "Return when honesty hurts less.","You mistook cruelty for strength.","Your effort was real; your result was not.","I accept your silence as surrender.",
+  "You wanted control. You met design.","This ending had your name from the start.","Bow out. The audience is bored.","Next time, bring resolve—not appetite."
+];
+const FOOL_SCORE_PLAYER_LINES=[
+  "You pierced inevitability for a second.","A clean strike. Keep your pulse steady.","You scored through pressure, not luck.","That angle had conviction.","You forced the script to blink.",
+  "So you can wound divinity.","Good. Make me respect your hands.","You scored—and the room got colder.","A single point with sovereign intent.","Your will carried that exchange.",
+  "You earned that point in full.","Interesting. You can read the fog.","That was elegant under fire.","You hit like you meant history.","One point. Infinite consequence.",
+  "I felt that in the marrow of fate.","Impressive. Do it again without fear.","You sharpened yourself on my edge.","That point has aura.","Good strike. The throne noticed."
+];
+const FOOL_SCORE_ENEMY_LINES=[
+  "There. Order restored.","Kneel to sequence.","You moved first. I moved last.","This is the weight of hierarchy.","Your defense was ceremonial.",
+  "You fell exactly where I placed you.","A clean punishment.","You are late to your own save.","The board belongs to my intent.","I take points, not requests.",
+  "Your panic has a pattern.","One more step into the fog.","This is what precision feels like.","I break plans without touching them.","Your options are narrowing.",
+  "That angle was dead before launch.","Pressure makes truth visible.","The stage tilts toward me.","I collect errors like trophies.","Another point to inevitability."
+];
+const FOOL_FOOLED_WIN_LINES=[
+  "You were the fool.",
+  "You were playing against yourself all along.",
+  "You were never worthy to change me.",
+  "You touched the throne and called it victory."
+];
+const FOOL_SEQ_AMBIENT={
+  seer:["Every angle you seek has already failed.","Prediction is mercy; I give little.","Your next move arrived earlier than you.","Intent is louder than action.","You are transparent in motion."],
+  clown:["Your cruelty wears a smiling mask.","You laugh to hide your shaking hands.","Mockery is the language of small men.","Applause for effort, not result.","You came to jeer; now perform."],
+  magician:["Perception is a leash.","You saw a path, not the trap.","I remove certainty with one gesture.","The obvious answer is usually mine.","Watch closely; understand nothing."],
+  faceless:["Strike harder; you still hit a mask.","Identity is a borrowed costume.","Name me, and lose me.","You cannot wound what you cannot define.","I have more faces than your patience."],
+  marionettist:["Raise your hands; I already did.","Resistance is choreography.","Your will is thread and tension.","Move as you wish; land where I choose.","I pull once. You obey twice."],
+  bizarro:["Reason is decorative here.","Straight lines bend around me.","You call it chaos; I call it order.","Logic is a local superstition.","The map is wrong on purpose."],
+  scholar:["I cite a past where you miss.","History is editable for those who qualify.","Yesterday answers to my voice.","Old seconds are still sharp.","You are late to your own moment."],
+  miracle:["Impossibility is only poor timing.","A miracle is certainty with patience.","Your point existed briefly.","I revoke outcomes, not effort.","Hope is a fragile witness."],
+  attendant:["Fog is kindness to unready eyes.","Mystery is a gate, not a veil.","Truth arrives only when invited.","I hide what would break you.","Questions are safer than answers."],
+  fool:["Kneel to the final ambiguity.","I am the joke and the verdict.","You sought prey and found a throne.","Your courage expires before mine.","The play ends where I smile."],
 };
 const FOOL_SPECIALS={
-  seer:{name:'SEER VISION',dur:2.6,cd:8.5},
-  clown:{name:'CLOWN DERISION',dur:1.4,cd:9},
-  magician:{name:'MAGICIAN\'S BLINK',dur:1.8,cd:8},
-  faceless:{name:'FACELESS SHIFT',dur:2.2,cd:8.2},
-  marionettist:{name:'MARIONETTIST THEATRE',dur:5,cd:11},
-  bizarro:{name:'BIZARRO CARNIVAL',dur:4.2,cd:11.5},
-  scholar:{name:'SCHOLAR OF YORE',dur:2.8,cd:9.5},
-  miracle:{name:'MIRACLE INVOKER',dur:2.4,cd:10.5},
-  attendant:{name:'ATTENDANT OF MYSTERIES',dur:4.2,cd:12},
-  fool:{name:'DOMAIN OF THE FOOL',dur:4.6,cd:13},
+  seer:{name:'FUTURE FORESIGHT',dur:2.9,cd:11.2},
+  clown:{name:'CLOWN DERISION',dur:1.8,cd:11.8},
+  magician:{name:'MAGICIAN\'S BLINK',dur:1.8,cd:10.8},
+  faceless:{name:'FACELESS SHIFT',dur:2.4,cd:11.1},
+  marionettist:{name:'MARIONETTIST THEATRE',dur:5.4,cd:12.6},
+  bizarro:{name:'BIZARRO CARNIVAL',dur:4.2,cd:13.1},
+  trickroom:{name:'TRICK ROOM',dur:3.8,cd:12.2},
+  scholar:{name:'SCHOLAR OF YORE',dur:2.8,cd:12.0},
+  miracle:{name:'MIRACLE INVOKER',dur:2.4,cd:12.3},
+  oraclebreak:{name:'FATE FRACTURE',dur:3.2,cd:13.2},
+  attendant:{name:'ATTENDANT OF MYSTERIES',dur:4.2,cd:13.6},
+  judgment:{name:'FALSE SALVATION',dur:3.8,cd:14.0},
+  fool:{name:'DOMAIN OF THE FOOL',dur:4.6,cd:14.6},
 };
 const FOOL_SPECIAL_LINES={
-  seer:["I saw this exchange minutes ago."],
-  clown:["You picked an easy prey and still tremble."],
-  magician:["A blink is enough to rewrite your chance."],
-  faceless:["You strike a mask and call it progress."],
-  marionettist:["Dance. The strings are already tied."],
-  bizarro:["Reason has left the stage. You remain."],
-  scholar:["I cite a past where you never scored."],
-  miracle:["A miracle is my habit, not your hope."],
-  attendant:["Mysteries conceal what your eyes do not deserve."],
-  fool:["THE FOOL descends. Your role is to lose."],
+  seer:["I saw this exchange minutes ago.","Prediction is mercy, and you get none.","Your next angle already failed."],
+  clown:["You picked easy prey and still tremble.","Smile wider. It helps the collapse.","Your confidence is costume jewelry."],
+  magician:["A blink rewrites your chance.","You watched the trick, not the hand.","Reality edits itself when I nod."],
+  faceless:["You strike a mask and call it progress.","Name me and lose me.","Identity is just bait for your aim."],
+  marionettist:["Dance. The strings are already tied.","Your inputs are decorative.","I pull once; you obey twice."],
+  bizarro:["Reason has left the stage. You remain.","Straight lines bend around me.","Logic is only local here."],
+  trickroom:["Left is right. Right is regret.","Direction obeys me, not geometry.","You move correctly and still lose."],
+  scholar:["I cite a past where you never scored.","Yesterday signs my verdict.","History bends before contact."],
+  miracle:["A miracle is my habit, not your hope.","Outcomes are reversible for me.","You scored briefly. I disagreed."],
+  oraclebreak:["I fracture your certainties one future at a time.","Your map dies first.","Prediction shatters on entry."],
+  attendant:["Mysteries conceal what your eyes do not deserve.","Fog is kindness to the unready.","Questions survive longer than you."],
+  judgment:["Salvation is false. Collapse is honest.","Mercy was never loaded.","Verdict arrives before impact."],
+  fool:["THE FOOL descends. Your role is to lose.","You sought prey and met a throne.","Aura is law here."],
 };
-const TIER_NAMES={common:'COMMON',uncommon:'UNCOMMON',rare:'RARE',epic:'EPIC',legendary:'LEGENDARY',mythical:'MYTHICAL',secret:'SECRET'};
-const TIER_COLORS={common:'#667788',uncommon:'#55aa77',rare:'#5588ff',epic:'#ffaa44',legendary:'#ff5555',mythical:'#ff44ff',secret:'#00ffcc'};
-const TIER_GLOW={common:'102,119,136',uncommon:'85,170,119',rare:'85,136,255',epic:'255,170,68',legendary:'255,85,85',mythical:'255,68,255',secret:'0,255,204'};
-const TIER_ICON={common:'\u25C7',uncommon:'\u25C8',rare:'\u2605',epic:'\u2726',legendary:'\u2742',mythical:'\u2748',secret:'\u2756'};
-const TIER_ORDER=['common','uncommon','rare','epic','legendary','mythical','secret'];
+const TIER_NAMES={common:'COMMON',uncommon:'UNCOMMON',rare:'RARE',epic:'EPIC',legendary:'LEGENDARY',mythical:'MYTHICAL',secret:'SECRET',klein:'ARCANA'};
+const TIER_COLORS={common:'#667788',uncommon:'#55aa77',rare:'#5588ff',epic:'#ffaa44',legendary:'#ff5555',mythical:'#ff44ff',secret:'#00ffcc',klein:'#d8d2ff'};
+const TIER_GLOW={common:'102,119,136',uncommon:'85,170,119',rare:'85,136,255',epic:'255,170,68',legendary:'255,85,85',mythical:'255,68,255',secret:'0,255,204',klein:'216,210,255'};
+const TIER_ICON={common:'\u25C7',uncommon:'\u25C8',rare:'\u2605',epic:'\u2726',legendary:'\u2742',mythical:'\u2748',secret:'\u2756',klein:'\u2736'};
+const TIER_ORDER=['common','uncommon','rare','epic','legendary','mythical','secret','klein'];
 
 // ═══ PALETTES ═══
-const PCOL={classic:{p:'#ffffff',g:'rgba(255,255,255,',t:[1,1,1]},oracle:{p:'#44ddff',g:'rgba(68,221,255,',t:[.27,.87,1]},inferno:{p:'#cc88ff',g:'rgba(204,136,255,',t:[.8,.53,1]},frost:{p:'#88ccff',g:'rgba(136,204,255,',t:[.53,.8,1]},storm:{p:'#ffee44',g:'rgba(255,238,68,',t:[1,.93,.27]},voidp:{p:'#ff44aa',g:'rgba(255,68,170,',t:[1,.27,.67]},};
+const PCOL={classic:{p:'#ffffff',g:'rgba(255,255,255,',t:[1,1,1]},oracle:{p:'#44ddff',g:'rgba(68,221,255,',t:[.27,.87,1]},paradox:{p:'#c7b3ff',g:'rgba(199,179,255,',t:[.78,.7,1]},inferno:{p:'#cc88ff',g:'rgba(204,136,255,',t:[.8,.53,1]},frost:{p:'#88ccff',g:'rgba(136,204,255,',t:[.53,.8,1]},storm:{p:'#ffee44',g:'rgba(255,238,68,',t:[1,.93,.27]},voidp:{p:'#ff44aa',g:'rgba(255,68,170,',t:[1,.27,.67]},};
 
 // ═══ PADDLES ═══
 const PADDLES=[
   {id:'classic',name:'STANDARD',hMul:1.1,desc:'No special tricks. Pure pong. Slightly larger paddle.',abil:'NONE',akey:'',ainfo:'',cd:999},
-  {id:'oracle',name:'ORACLE',hMul:1,desc:'See the future. Reveals full ball trajectory for 8 seconds.',abil:'FORESIGHT',akey:'Q',ainfo:'See ball path 8s',cd:12},
+  {id:'oracle',name:'ORACLE',hMul:1,desc:'Future foresight. Briefly projects the ball path so you can read bounces before they happen.',abil:'FUTURE FORESIGHT',akey:'Q',ainfo:'Projected path window',cd:8},
+  {id:'paradox',name:'PARADOX',hMul:1,desc:'Paradox snap. Teleports the ball backward in its path, then relaunches it on a new line toward the enemy side.',abil:'PARADOX SNAP',akey:'Q',ainfo:'Rewind teleport + relaunch',cd:9},
   {id:'inferno',name:'PHANTOM',hMul:.95,desc:'Phase strike. Your next paddle hit becomes a ghost pierce through enemy blocks.',abil:'PHASE',akey:'Q',ainfo:'Next hit ghost-pierces',cd:6},
-  {id:'frost',name:'GLACIER',hMul:1.05,desc:'Blizzard field. Ball slows heavily in enemy half for 1.8s.',abil:'BLIZZARD',akey:'Q',ainfo:'Slow zone 1.8s',cd:8},
+  {id:'frost',name:'GLACIER',hMul:1.05,desc:'Absolute-zero field. Enemy half slows hard and briefly freezes enemy control.',abil:'ABSOLUTE ZERO',akey:'Q',ainfo:'Slow zone + brief freeze',cd:8},
   {id:'storm',name:'STORM',hMul:.9,desc:'Charge lightning. Next hit fires a bolt that stuns the enemy paddle.',abil:'THUNDER',akey:'Q',ainfo:'Stun bolt on next hit',cd:6},
   {id:'voidp',name:'VOID',hMul:1,desc:'Drop a gravity well in the ball path. Warps trajectory.',abil:'GRAVITY WELL',akey:'Q',ainfo:'Gravity well 3s',cd:6},
 ];
@@ -121,11 +190,11 @@ const ENEMIES=[
   // SS-tier
   {id:'accel',name:'CHAOS',tag:'!!',diff:'SS',mod:c=>{c.chaos=true;c.aiSpd*=1.1;}},
   {id:'warden',name:'WARDEN',tag:'!#',diff:'SS',mod:c=>{c.aiReact=Math.min(c.aiReact+.15,.97);c.chaos=true;c.trickAng=true;}},
-  // Special hidden challenger
-  {id:'thefool',name:'THE FOOL',tag:'🃏',diff:'F-',mod:c=>{c.aiSpd=220;c.aiReact=.18;c.eH=BASE_PAD_H*.92;}},
   // SSS-tier (boss-only) - terrifying
   {id:'apex',name:'APEX',tag:'\u2620',diff:'SSS',mod:c=>{c.chaos=true;c.trickAng=true;c.aiReact=Math.min(c.aiReact+.2,.98);c.aiSpd*=1.3;}},
   {id:'void',name:'THE VOID',tag:'\u2588',diff:'SSS',mod:c=>{c.ghost=true;c.chaos=true;c.trickAng=true;c.aiReact=Math.min(c.aiReact+.18,.98);c.aiSpd*=1.25;}},
+  // Special hidden challenger (listed below SSS, still F- rank)
+  {id:'thefool',name:'THE FOOL',tag:'🃏',diff:'F-',mod:c=>{c.aiSpd=220;c.aiReact=.18;c.eH=BASE_PAD_H*.92;}},
 ];
 
 function getEnemiesForDiff(diff){return ENEMIES.filter(e=>e.diff===diff);}
@@ -161,16 +230,141 @@ const ENEMY_ABIL_MAP={
 function getEnemyAbil(enemyId){return E_ABILS[ENEMY_ABIL_MAP[enemyId]||'none']||E_ABILS.none;}
 
 function getBaseBallSpeedForDiff(diff){
-  return Math.round(BASE_SPD*(DIFF_BALL_MUL[diff]||1));
+  return Math.min(BASE_BALL_SPEED_CAP,Math.round(BASE_SPD*(DIFF_BALL_MUL[diff]||1)));
 }
 
-function foolSpeak(g,lines,dur=2.6,force=false){
+function foolStageToKey(stage){
+  return FOOL_SEQ_KEY[Math.max(0,Math.min((stage||1)-1,FOOL_SEQ_KEY.length-1))]||'seer';
+}
+
+function nextFromBag(g,bagKey,pool){
+  if(!g||!pool||!pool.length)return '';
+  if(!g[bagKey]||!Array.isArray(g[bagKey])||g[bagKey].length===0){
+    g[bagKey]=[...pool].sort(()=>Math.random()-.5);
+  }
+  return g[bagKey].pop()||pool[Math.floor(Math.random()*pool.length)]||'';
+}
+
+function nextTypeDelay(ch){
+  let add=.018;
+  if(ch===' '||ch==='\t')add=.032;
+  else if(ch===','||ch===';'||ch===':')add=.1;
+  else if(ch==='.'||ch==='!'||ch==='?'||ch==='…')add=.2;
+  else if(ch==='—'||ch==='-')add=.14;
+  return add;
+}
+
+function triggerFoolScoreVoice(g,isPlayerScore){
+  if(!g||g.cfg.enemy.id!=='thefool')return;
+  if(g.foolScoreVoiceT>0)return;
+  if(g.foolAscPending||g.foolAscT>0||(g.foolSpecT>0&&g.foolSpecTextT>0)||(g.foolDialogActive&&g.foolDialogBlocking))return;
+  const line=isPlayerScore
+    ?nextFromBag(g,'foolScoreBagP',FOOL_SCORE_PLAYER_LINES)
+    :nextFromBag(g,'foolScoreBagE',FOOL_SCORE_ENEMY_LINES);
+  if(line){
+    g.foolScoreVoiceT=4.5;
+    foolSpeak(g,[line],2.8,true,false);
+  }
+}
+
+function triggerFoolScoreAscPulse(g,isPlayerScore){
+  if(!g||g.cfg.enemy.id!=='thefool')return;
+  g.foolAscPulse=Math.max(g.foolAscPulse||0,1.15);
+}
+
+function triggerFoolSwap(g){
+  if(!g||g.cfg.enemy.id!=='thefool'||g.foolSwapTriggered)return;
+  g.foolSwapTriggered=true;
+  g.foolAscPending=false;
+  g.foolAscPendingFrom='';
+  g.foolAscPendingTo='';
+  g.foolAscPendingSeq='';
+  g.foolAscPendingDelay=0;
+  g.foolAscT=0;
+  g.foolSpecTextT=0;
+  g.foolSpecSay='';
+  g.foolSpecSayShow=0;
+  g.foolSpecTypeT=0;
+  g.foolSidesSwapped=false;
+  g.foolSwapT=7.6;
+  g.foolDistortT=Math.max(g.foolDistortT,14);
+  g.ballHideT=Math.max(g.ballHideT,1.2);
+  g.flash=.35;g.flashCol=[.92,.92,1];g.shake=.2;g.chromaShift=Math.max(g.chromaShift,.75);
+  g.pScore=Math.max(0,g.winScore-1);
+  foolSpeak(g,FOOL_FOOLED_WIN_LINES,3.5,true,true);
+}
+
+function foolSpeak(g,lines,dur=2.6,force=false,blocking=false){
   if(!g||!Array.isArray(lines)||!lines.length)return;
-  if(!force&&g.foolLineT>0.45)return;
-  const line=lines[Math.floor(Math.random()*lines.length)];
-  g.foolLine='“'+line+'”';
-  g.foolLineT=dur;
-  g.foolLineMax=dur;
+  if(!force&&g.foolAscPending)return;
+  if(!force&&g.foolDialogActive&&g.foolDialogBlocking)return;
+  const raw=lines[Math.floor(Math.random()*lines.length)];
+  const line='“'+raw+'”';
+  if(!g.foolDialogQueue)g.foolDialogQueue=[];
+  if(!blocking){
+    if(!force&&(g.foolLineLockT>0||g.foolAscPending||g.foolAscT>0||(g.foolSpecT>0&&g.foolSpecTextT>0)||(g.foolDialogActive&&g.foolDialogBlocking)))return;
+    g.foolLine=line;
+    g.foolLineShow=0;
+    g.foolLineTypeT=.02;
+    g.foolLineT=dur;
+    g.foolLineMax=dur;
+    g.foolLineLockT=Math.max(g.foolLineLockT||0,Math.min(2.4,dur*.72));
+    return;
+  }
+  const openLine=(txt)=>{g.foolDialogActive=true;g.foolDialogBlocking=true;g.foolDialogLine=txt;g.foolDialogShow=0;g.foolDialogTypeT=.02;g.foolDialogPulse=0;g.foolDialogFade=0;};
+  if(g.foolDialogActive&&g.foolDialogBlocking){
+    const last=g.foolDialogQueue[g.foolDialogQueue.length-1]||'';
+    if(!force&&((g.foolDialogLine||'')===line||last===line))return;
+    if(force)g.foolDialogQueue.unshift(line);
+    else if(g.foolDialogQueue.length<6)g.foolDialogQueue.push(line);
+  }else{
+    g.foolDialogQueue.length=0;
+    openLine(line);
+  }
+}
+
+function queueFoolBlockingLines(g,lines){
+  if(!g||!Array.isArray(lines)||!lines.length)return;
+  const seen=new Set();
+  const packed=lines
+    .filter(Boolean)
+    .map(txt=>String(txt).trim())
+    .filter(txt=>{
+      const key=txt.toLowerCase();
+      if(seen.has(key))return false;
+      seen.add(key);
+      return true;
+    })
+    .map(txt=>'“'+txt+'”');
+  if(!packed.length)return;
+  g.foolDialogActive=true;
+  g.foolDialogBlocking=true;
+  g.foolDialogLine=packed[0];
+  g.foolDialogShow=0;
+  g.foolDialogTypeT=.02;
+  g.foolDialogPulse=0;
+  g.foolDialogFade=0;
+  g.foolDialogQueue=[...packed.slice(1)];
+}
+
+function advanceFoolDialogue(){
+  if(!g||!g.foolDialogActive||!g.foolDialogBlocking)return false;
+  if(g.foolDialogQueue&&g.foolDialogQueue.length){
+    g.foolDialogLine=g.foolDialogQueue.shift();
+    g.foolDialogShow=0;
+    g.foolDialogTypeT=.02;
+    g.foolDialogPulse=0;
+  }else{
+    g.foolDialogActive=false;
+    g.foolDialogBlocking=false;
+    g.foolDialogLine='';
+    if(g.cfg.enemy.id==='thefool'&&g.foolIntroPending){
+      g.foolIntroPending=false;
+      g.foolIntroTopT=2.6;
+      g.foolPaceLockT=Math.max(g.foolPaceLockT||0,2.6);
+    }
+  }
+  return true;
 }
 
 function getUnlockedFoolSpecials(g){
@@ -181,40 +375,80 @@ function getUnlockedFoolSpecials(g){
   if(stage>=3)ids.push('magician');
   if(stage>=4)ids.push('faceless');
   if(stage>=5)ids.push('marionettist');
-  if(stage>=6)ids.push('bizarro');
+  if(stage>=6){ids.push('bizarro');ids.push('trickroom');}
   if(stage>=7)ids.push('scholar');
-  if(stage>=8)ids.push('miracle');
-  if(stage>=9)ids.push('attendant');
-  if(stage>=10)ids.push('fool');
+  if(stage>=8){ids.push('miracle');ids.push('oraclebreak');}
+  if(stage>=9){ids.push('attendant');ids.push('judgment');}
+  if(stage>=10){ids.push('fool');}
   return ids;
+}
+
+function pickFoolSpecial(g,ready){
+  if(!ready||!ready.length)return '';
+  const weightMap={
+    marionettist:2.5,
+    trickroom:2.25,
+    clown:1.45,
+    fool:1.3,
+    oraclebreak:1.2,
+  };
+  let total=0;
+  const weighted=ready.map(id=>{
+    let w=weightMap[id]||1;
+    if(g&&g.foolLastSpec===id)w*=0.35;
+    if((g?.foolStage||1)<5&&id==='seer')w*=0.8;
+    total+=w;
+    return {id,w};
+  });
+  if(total<=0)return ready[Math.floor(Math.random()*ready.length)]||'';
+  let r=Math.random()*total;
+  for(const item of weighted){
+    r-=item.w;
+    if(r<=0)return item.id;
+  }
+  return weighted[weighted.length-1]?.id||ready[0]||'';
 }
 
 function startFoolSpecial(g,id){
   const def=FOOL_SPECIALS[id];
   if(!g||!def)return;
   g.foolSpec=id;
+  g.foolLastSpec=id;
   g.foolSpecT=def.dur;
   g.foolSpecCDs[id]=def.cd;
   g.foolSpecLabel=def.name;
-  g.foolSpecTextT=Math.max(2.2,Math.min(3.4,def.dur));
-  foolSpeak(g,FOOL_SPECIAL_LINES[id]||["Remain still and lose with grace."],2.6,true);
+  g.foolSpecTextT=Math.max(2.2,Math.min(3.2,def.dur+0.8));
+  const sayPool=FOOL_SPECIAL_LINES[id]||["Remain still and lose with grace."];
+  const bagKey='foolSpecBag_'+id;
+  g.foolSpecSay=nextFromBag(g,bagKey,sayPool)||'';
+  g.foolSpecSayShow=0;
+  g.foolSpecTypeT=.045;
   g.flash=Math.max(g.flash,.18);
   g.flashCol=[.78,.78,.95];
   g.shake=Math.max(g.shake,.08);
+  g.foolPaceLockT=Math.max(g.foolPaceLockT||0,1.1);
   addSparks(g,EX,g.ey,14,110,[.82,.82,.95]);
   if(id==='marionettist'||id==='bizarro'||id==='fool'){
     const puppets=[];
-    const lanes=id==='fool'?9:id==='bizarro'?8:7;
+    const lanes=id==='fool'?10:id==='bizarro'?9:8;
     for(let i=0;i<lanes;i++){
       const ny=GH*(i+1)/(lanes+1);
       const nx=GW*.54+(i%2)*42+rng(-8,8);
-      puppets.push({x:nx,y:ny,h:46+rng(-6,10),a:.52,broken:false,fade:1});
+      puppets.push({x:nx,y:ny,ax:nx+rng(-22,22),w:10+rng(0,3),h:50+rng(-4,12),a:.52,broken:false,fade:1});
     }
     g.foolPuppets=puppets;
   }
   if(id==='miracle'||id==='fool')g.foolMiracleCharges=Math.max(g.foolMiracleCharges||0,id==='fool'?3:2);
   if(id==='scholar')g.foolScholarTick=.35;
+  if(id==='seer')g.foolSeerTick=.28;
+  if(id==='clown')g.foolClownTick=.24;
+  if(id==='magician')g.foolMagicianTick=.2;
+  if(id==='faceless')g.foolFacelessTick=.34;
+  if(id==='fool')g.foolFoolTick=.18;
   if(id==='attendant')g.foolConcealTick=.18;
+  if(id==='trickroom')g.foolTrickTick=.2;
+  if(id==='oraclebreak')g.foolOracleBreakTick=.2;
+  if(id==='judgment')g.foolJudgmentTick=.24;
 }
 
 function applyFoolSequence(g,stage){
@@ -236,9 +470,9 @@ function applyFoolSequence(g,stage){
   g.foolNearGod=s>=10;
 
   g.eAbil=E_ABILS.none;
+  g.foolFog=true;
   if(g.foolBizarro){
     g.foolClone=true;
-    g.foolFog=true;
     g.cloneY=g.ey;
   }
   if(g.foolMiracle){
@@ -253,20 +487,88 @@ function applyFoolSequence(g,stage){
   }
 }
 
-function onFoolPlayerScore(g){
-  if(!g||g.cfg.enemy.id!=='thefool'||g.done)return;
-  g.foolStage=(g.foolStage||0)+1;
-  const stage=g.foolStage;
-  applyFoolSequence(g,stage);
-  const seq=FOOL_SEQUENCES[Math.min(stage-1,FOOL_SEQUENCES.length-1)]||'SEER';
-  const msg='ASCENDS: '+seq;
+function beginFoolAscension(g,fromLabel,toLabel,toSeq){
+  if(!g||g.cfg.enemy.id!=='thefool')return;
+  g.foolSpecTextT=0;
+  g.foolSpecSay='';
+  g.foolSpecSayShow=0;
+  g.foolSpecTypeT=0;
+  const ascAnimHold=0.3,ascAnimDur=1.25,ascPreQuoteGap=1.5,ascQuoteDur=1.5,ascPostGap=1.0;
+  const ascTotal=(ascAnimHold+ascAnimDur)+ascPreQuoteGap+ascQuoteDur+ascPostGap;
   g.foolAscPulse=Math.max(g.foolAscPulse||0,1.4);
+  g.foolAscFromLabel=fromLabel;
+  g.foolAscToLabel=toLabel;
+  g.foolAscLabel=g.foolAscToLabel;
+  g.foolAscT=ascTotal;
+  g.foolAscMax=ascTotal;
+  g.foolPaceLockT=Math.max(g.foolPaceLockT||0,ascTotal);
+  g.foolAscDialog='“'+nextFromBag(g,'foolAscSeqBag_'+toSeq,FOOL_ASCENT_LINES[toSeq]||['The curtain rises.'])+'”';
+  g.foolAscDialogShow=0;
+  g.foolAscDialogTypeT=.014;
+  g.foolLine='';
+  g.foolLineT=0;
   g.flash=.24;g.flashCol=[.78,.78,.98];
-  foolSpeak(g,FOOL_ASCENT_LINES[seq]||['The curtain rises.'],2.5,true);
-  g.scorePops.push({x:GW/2,y:GH*.28,text:msg,life:1.2});
   addSparks(g,EX,g.ey,14,120,[.8,.8,.95]);
   g.shake=Math.max(g.shake,.08);
-  tone(260+stage*35,.08,'sine',.03);
+  tone(260+((g.foolStage||1)*35),.08,'sine',.03);
+}
+
+function onFoolPlayerScore(g){
+  if(!g||g.cfg.enemy.id!=='thefool'||g.done)return;
+  const fromStage=clamp(g.foolStage||1,1,10);
+  const stage=clamp(fromStage+1,1,10);
+  g.foolStage=stage;
+  applyFoolSequence(g,stage);
+  const fromSeq=FOOL_SEQUENCES[Math.min(fromStage-1,FOOL_SEQUENCES.length-1)]||'SEER';
+  const toSeq=FOOL_SEQUENCES[Math.min(stage-1,FOOL_SEQUENCES.length-1)]||'SEER';
+  const fromNum=10-fromStage;
+  const toNum=10-stage;
+  const fromLabel='SEQUENCE '+fromNum+' — '+fromSeq;
+  const toLabel='SEQUENCE '+toNum+' — '+toSeq;
+  const abilityBannerActive=(g.foolSpecT>0&&g.foolSpecTextT>0);
+  if(abilityBannerActive){
+    g.foolSpecTextT=0;
+    g.foolSpecSay='';
+    g.foolSpecSayShow=0;
+    g.foolSpecTypeT=0;
+    g.foolAscPending=true;
+    g.foolAscPendingFrom=fromLabel;
+    g.foolAscPendingTo=toLabel;
+    g.foolAscPendingSeq=toSeq;
+    g.foolAscPendingDelay=.14;
+    g.foolPaceLockT=Math.max(g.foolPaceLockT||0,.35);
+  }else{
+    beginFoolAscension(g,fromLabel,toLabel,toSeq);
+  }
+}
+
+function applyFoolGoal(g,amount){
+  if(!g||g.cfg.enemy.id!=='thefool')return {win:false,prevented:false};
+  amount=1;
+  g.goalLockT=Math.max(g.goalLockT||0,.22);
+  if(g.foolPointGate){
+    g.afterBall=null;
+    g.multiBalls.length=0;
+    if(g.startPause<=0)resetBall(g,-1);
+    return {win:false,prevented:true};
+  }
+  g.foolPointGate=true;
+  g.afterBall=null;
+  g.multiBalls.length=0;
+  g.pScore+=1;
+  triggerFoolScoreAscPulse(g,true);
+  onFoolPlayerScore(g);
+  if(g.pScore>=g.winScore){
+    if(!g.foolSwapTriggered){
+      triggerFoolSwap(g);
+      if(!g.done&&g.startPause<=0)resetBall(g,-1);
+      return {win:false,prevented:true};
+    }
+    g.done=true;
+    g.result='win';
+    return {win:true,prevented:false};
+  }
+  return {win:false,prevented:false};
 }
 
 const E_UPS=[
@@ -294,6 +596,7 @@ const ALL_CARDS=[
   {id:'shield',name:'SAFETY NET',desc:'Auto-block your first missed ball each wave',tier:'rare',type:'ability',fn:s=>{s.shields++;}},
   {id:'freeze',name:'FREEZE FRAME',desc:'Enemy paddle freezes 0.8s every time you hit the ball',tier:'rare',type:'ability',fn:s=>{s.freeze=true;}},
   {id:'siphon',name:'SIPHON',desc:'Enemy AI gets 5% worse every time you score',tier:'rare',type:'ability',fn:s=>{s.siphon=true;}},
+  {id:'oracle_eye',name:'ORACLE SIGHT',desc:'Predictive vision: reveals a projected ball path during rallies.',tier:'rare',type:'ability',fn:s=>{s.oracleSight=true;}},
   {id:'turbo',name:'ADRENALINE',desc:'+40% paddle speed, +15% ball speed',tier:'rare',type:'stat',fn:s=>{s.pSpd*=1.4;s.bs*=1.15;}},
   {id:'fort',name:'IRON WILL',desc:'+2 lives, +10% paddle size',tier:'rare',type:'stat',fn:s=>{s.lives+=2;s.ph*=1.1;}},
   // EPIC (powerful abilities)
@@ -323,6 +626,7 @@ const ALL_CARDS=[
   {id:'sec_storm',name:'STORM CALLER',desc:'Every hit fires a lightning bolt that stuns enemy paddle.',tier:'secret',type:'ability',fn:s=>{s.stormCaller=true;}},
   {id:'sec_phantom',name:'PHANTOM STRIKE',desc:'Ball teleports 20% closer to the goal on every hit.',tier:'secret',type:'ability',fn:s=>{s.phantomStrike=true;}},
   {id:'sec_over',name:'OVERCHARGE',desc:'Every 3rd consecutive hit, ball pierces through enemy paddle.',tier:'secret',type:'ability',fn:s=>{s.overcharge=true;}},
+  {id:'sec_klein',name:'KLEIN PARADOX',desc:'Hidden aura tier. Every hit summons storm, overcharge, phantom shift, and singularity pressure.',tier:'klein',type:'ability',fn:s=>{s.stormCaller=true;s.phantomStrike=true;s.overcharge=true;s.singularity=true;s.echoHit=true;s.voidWalk=true;s.homing=true;s.transcend=true;s.lives+=3;s.bs*=1.18;s.pSpd*=1.2;s.cdMul*=.45;s.shields+=1;}},
   {id:'sec_abs',name:'THE ABSOLUTE',desc:'Every secret ability combined. All stats boosted.',tier:'secret',type:'ability',fn:s=>{s.stormCaller=true;s.phantomStrike=true;s.berserker=true;s.overcharge=true;s.transcend=true;s.doppel=true;s.homing=true;s.multicast=true;s.magnet=true;s.dblScore=true;s.vampire=true;s.freeze=true;s.shockwave=true;s.edge=true;s.rico=true;s.aiCap=true;s.triScore=true;s.echoHit=true;s.voidWalk=true;s.lives+=5;s.pSpd*=1.5;s.bs*=1.1;s.cdMul*=.3;s.shields+=3;}},
   {id:'sec_master',name:'MASTER OF SKILL',desc:'Strip ALL abilities. Ball 50% faster. Your hits TRIPLE speed. Enemy hits reset. Every rally = permanent +20% base speed.',tier:'mythical',type:'ability',fn:s=>{s.masterSkill=true;s.bs*=1.5;s.freeze=false;s.afterimage=false;s.shockwave=false;s.homing=false;s.timewarp=false;s.multicast=false;s.transcend=false;s.doppel=false;s.singularity=false;s.magnet=false;s.dblScore=false;s.vampire=false;s.echoHit=false;s.voidWalk=false;s.stormCaller=false;s.phantomStrike=false;s.berserker=false;s.overcharge=false;s.cdMul=999;}},
 ];
@@ -368,10 +672,7 @@ function waveCfg(wv){
   const diff=boss?DIFF_RANKS[Math.min(rankIdx+1,DIFF_RANKS.length-1)]:DIFF_RANKS[rankIdx];
   let aiSpd,aiReact;
   if(rankIdx>=5){aiSpd=260+wv*30+(boss?80:0);aiReact=clamp(.25+wv*.07+(boss ? .15 : 0),0,.97);}
-  else{aiSpd=260+wv*22+(boss?50:0);aiReact=clamp(.15+wv*.04+(boss ? .06 : 0),0,.5);} // low-rank starts smarter now
-  // make all AI a bit tougher: faster and slightly sharper reactions
-  aiSpd *= 1.1;
-  aiReact = Math.min(aiReact + 0.08, 0.99);
+  else{aiSpd=170+wv*12+(boss?25:0);aiReact=clamp(.02+wv*.014+(boss ? .03 : 0),0,.23);} // below A: intentionally weaker
   const eH=BASE_PAD_H;
   const pool=getEnemiesForDiff(diff);
   const enemy=pool.length>0?pool[Math.floor(Math.random()*pool.length)]:ENEMIES[0];
@@ -400,7 +701,9 @@ function resetBall(g,dir){
   g.bvx=0;
   g.bvy=0;
   g.pendingDir=dir;
-  g.startPause=0.5;
+  g.pendingVy=rng(-160,160);
+  g.startPause=0.42;
+  g.startPauseMax=0.42;
   g.shUsed=false;
   g.combo=0;
   g.trail=[];
@@ -420,7 +723,8 @@ function resetBall(g,dir){
   // fighting chance if they can keep the ball alive. we only apply the
   // effect when the configured difficulty is S or harder so low‑tier AI
   // isn't affected.
-  const diffIdx = DIFF_RANKS.indexOf(g.cfg.diff);
+  const diffIdxRaw = DIFF_RANKS.indexOf(g.cfg.diff);
+  const diffIdx = diffIdxRaw>=0?diffIdxRaw:DIFF_RANKS.length-1;
   const maxIdx = DIFF_RANKS.length - 1;
   const sIdx = DIFF_RANKS.indexOf('S');
   if(diffIdx<sIdx)return;
@@ -439,10 +743,12 @@ function newGame(pid,wv,sv,eUps,oppCfg){
   const am=sv?.aiMod??1;
   const rankSpdMul=(getBaseBallSpeedForDiff(cfg.diff)/BASE_SPD);
   const bs=(sv?.bs??BASE_SPD)*rankSpdMul;
-  const _iDir=(Math.random()>.5?1:-1);const ng={padId:pid,pad,cfg,t:0,bx:GW/2,by:GH/2+rng(-40,40),bvx:0,bvy:0,pendingDir:_iDir,startPause:0.5,bs,rallyBase:bs,ballSpd:bs,rallyHits:0,trail:[],
+  const _iDir=(Math.random()>.5?1:-1),_iVy=rng(-160,160);const ng={padId:pid,pad,cfg,t:0,bx:GW/2,by:GH/2+rng(-40,40),bvx:0,bvy:0,pendingDir:_iDir,pendingVy:_iVy,startPause:0.42,startPauseMax:0.42,bs,rallyBase:bs,ballSpd:bs,rallyHits:0,trail:[],
     px:PX_HOME,py:GH/2,ph:sv?.ph??BASE_PAD_H*pad.hMul,pSpd:sv?.pSpd??480,horizMul:sv?.horizMul??1,ey:GH/2,eH:cfg.eH,eHBase:cfg.eH,aiSpd:cfg.aiSpd*am,aiMod:am,aiReact:cfg.aiReact,pScore:0,eScore:0,lives:sv?.lives??3,shields:sv?.shields??0,shUsed:false,cdMul:sv?.cdMul??1,
     // Abilities (passive)
     edge:sv?.edge??false,rico:sv?.rico??false,magnet:sv?.magnet??false,dblScore:sv?.dblScore??false,vampire:sv?.vampire??false,
+    oracleSight:sv?.oracleSight??false,
+    perfectPilot:sv?.perfectPilot??false,
     freeze:sv?.freeze??false,afterimage:sv?.afterimage??false,shockwave:sv?.shockwave??false,
     homing:sv?.homing??false,timewarp:sv?.timewarp??false,multicast:sv?.multicast??false,
     transcend:sv?.transcend??false,doppel:sv?.doppel??false,singularity:sv?.singularity??false,
@@ -456,7 +762,7 @@ function newGame(pid,wv,sv,eUps,oppCfg){
     abCD:0,curveNext:false,multiBalls:[],ghostBall:false,ghostT:0,_pierce:false,placedWall:null,wallT:0,shrinkT:0,smashNext:false,
     freezeT:0,afterBall:null,shockT:0,
     // New paddle ability states
-    foresightT:0, // Oracle: time left showing ball path
+    foresightT:0, // Oracle: future foresight window
     phaseNext:false, // Phantom: next hit pierces
     phaseT:0,
     blizzardT:0, // Frost: freeze everything
@@ -468,7 +774,7 @@ function newGame(pid,wv,sv,eUps,oppCfg){
     siphon:sv?.siphon??false,
     _masterBaseSpd:0, // stores speed before player hit boost
     _masterHitBoosted:false, // whether player hit boost is active
-    shake:0,shX:0,shY:0,flash:0,flashCol:[1,1,1],ghostA:1,combo:0,sparks:[],hitFlash:0,scoreFlash:0,scoreFlashSide:0,chromaShift:0,
+    shake:0,shX:0,shY:0,shPhaseX:rng(0,Math.PI*2),shPhaseY:rng(0,Math.PI*2),flash:0,flashCol:[1,1,1],ghostA:1,combo:0,sparks:[],hitFlash:0,scoreFlash:0,scoreFlashSide:0,chromaShift:0,
     done:false,result:null,doneT:0,trickAng:cfg.trickAng,chaos:cfg.chaos,jitter:cfg.jitter||false,
     // Enemy ability state
     eAbil:getEnemyAbil(cfg.enemy.id),eAbilCD:2,eAbilActive:0,eAbilPhase:'idle',
@@ -498,27 +804,47 @@ function newGame(pid,wv,sv,eUps,oppCfg){
     aiTgt:GH/2,aiTgtTimer:0,aiRandOff:0,aiBallDir:0,
     // Visual enhancement: floating score pop-ups and ability flashes
     scorePops:[],abilFlash:0,lastCombo:0,rankSpdMul,
+    goalLockT:0,
     winScore:PTS_WIN,
     foolStage:0,foolClone:false,
     ballHideT:0,ctrlInvertT:0,
     foolFog:false,foolDistortT:0,foolNearGod:false,
     foolTargetReact:0,foolTargetSpd:0,foolAscPulse:0,
-    foolLine:'',foolLineT:0,foolLineMax:0,
+    foolLine:'',foolLineShow:0,foolLineTypeT:0,foolLineT:0,foolLineMax:0,
     foolSeer:false,foolClown:false,foolMagician:false,foolFaceless:false,
     foolMarionettist:false,foolBizarro:false,foolScholar:false,foolMiracle:false,foolAttendant:false,
-    foolPuppetTick:0,foolConcealTick:0,foolScholarTick:0,foolMiracleCharges:0,
+    foolPuppetTick:0,foolConcealTick:0,foolScholarTick:0,foolMiracleCharges:0,foolAmbientTick:3.5,
     foolSpec:'',foolSpecT:0,foolSpecLabel:'',foolSpecTextT:0,foolPuppets:[],foolSpecCDs:{},foolSpecGapT:0,
+    foolSpecSay:'',foolSpecSayShow:0,foolSpecTypeT:0,
+    foolTrickTick:0,foolOracleBreakTick:0,foolJudgmentTick:0,foolSeerTick:0,foolClownTick:0,foolMagicianTick:0,foolFacelessTick:0,foolFoolTick:0,
+    foolDialogActive:false,foolDialogBlocking:false,foolDialogQueue:[],foolDialogLine:'',foolDialogShow:0,foolDialogTypeT:0,foolDialogPulse:0,foolDialogFade:0,
+    foolLineLockT:0,foolScoreVoiceT:0,foolQuoteLockT:0,foolLastSpec:'',
+    foolStartAmbientBag:[],foolIntroPending:false,foolIntroTopT:0,
+    foolScoreBagP:[],foolScoreBagE:[],
+    foolSwapTriggered:false,foolSidesSwapped:false,foolSwapT:0,foolLoseLine:'',foolPointGate:false,
+    foolAscLabel:'',foolAscFromLabel:'',foolAscToLabel:'',foolAscT:0,foolAscMax:0,foolAscDialog:'',foolAscDialogShow:0,foolAscDialogTypeT:0,
+    foolAscPending:false,foolAscPendingFrom:'',foolAscPendingTo:'',foolAscPendingSeq:'',foolAscPendingDelay:0,
+    foolPaceLockT:0,
   };
   if(cfg.enemy.id==='thefool'){
     ng.pScore=-5;
     ng.eScore=0;
     ng.winScore=PTS_WIN;
+    ng.foolStage=1;
     ng.aiSpd=Math.max(ng.aiSpd,220);
     ng.aiReact=Math.max(ng.aiReact,.18);
     ng.foolTargetSpd=ng.aiSpd;
     ng.foolTargetReact=ng.aiReact;
+    ng.foolStartAmbientBag=[...FOOL_START_LINES].sort(()=>Math.random()-.5);
     applyFoolSequence(ng,1);
-    foolSpeak(ng,["So you came to bully the weak?", "How brave—hunting an easy target.", "I am THE FOOL. Remember that when you lose."],3.1,true);
+    const enteringLine=nextFromBag(ng,'foolStartEntryBag',FOOL_ENTRY_LINES)||'You sought an easy hunt and found a final sequence.';
+    queueFoolBlockingLines(ng,[
+      FOOL_MECHANIC_LINES[0],
+      FOOL_MECHANIC_LINES[2],
+      nextFromBag(ng,'foolStartWarnBag',FOOL_START_WARNING_LINES),
+      enteringLine,
+    ]);
+    ng.foolIntroPending=true;
   }
   // Apply AI cap (secret)
   if(ng.aiCap){ng.aiReact=Math.min(ng.aiReact,.5);ng.aiSpd*=.6;}
@@ -527,20 +853,63 @@ function newGame(pid,wv,sv,eUps,oppCfg){
   return ng;
 }
 
-function saveGame(g){return{bs:g.bs/(g.rankSpdMul||1),ph:g.ph,pSpd:g.pSpd,cdMul:g.cdMul,edge:g.edge,rico:g.rico,shields:g.shields,lives:g.lives,aiMod:g.aiMod,horizMul:g.horizMul,magnet:g.magnet,dblScore:g.dblScore,vampire:g.vampire,freeze:g.freeze,afterimage:g.afterimage,shockwave:g.shockwave,homing:g.homing,timewarp:g.timewarp,multicast:g.multicast,transcend:g.transcend,doppel:g.doppel,singularity:g.singularity,aiCap:g.aiCap,triScore:g.triScore,echoHit:g.echoHit,voidWalk:g.voidWalk,stormCaller:g.stormCaller,phantomStrike:g.phantomStrike,mirrorMatch:g.mirrorMatch,berserker:g.berserker,overcharge:g.overcharge,masterSkill:g.masterSkill,siphon:g.siphon};}
+function saveGame(g){return{bs:g.bs/(g.rankSpdMul||1),ph:g.ph,pSpd:g.pSpd,cdMul:g.cdMul,edge:g.edge,rico:g.rico,shields:g.shields,lives:g.lives,aiMod:g.aiMod,horizMul:g.horizMul,magnet:g.magnet,dblScore:g.dblScore,vampire:g.vampire,oracleSight:g.oracleSight,perfectPilot:g.perfectPilot,freeze:g.freeze,afterimage:g.afterimage,shockwave:g.shockwave,homing:g.homing,timewarp:g.timewarp,multicast:g.multicast,transcend:g.transcend,doppel:g.doppel,singularity:g.singularity,aiCap:g.aiCap,triScore:g.triScore,echoHit:g.echoHit,voidWalk:g.voidWalk,stormCaller:g.stormCaller,phantomStrike:g.phantomStrike,mirrorMatch:g.mirrorMatch,berserker:g.berserker,overcharge:g.overcharge,masterSkill:g.masterSkill,siphon:g.siphon};}
 
 // ═══ UPDATE ═══
 function update(dt){
   if(!g)return;if(g.done){g.doneT+=dt;return;}
   g.t+=dt;
+  if(g.goalLockT>0)g.goalLockT-=dt;
   if(g.abCD>0)g.abCD-=dt;
-  if(g.shake>0){g.shake-=dt;const i=g.shake*20;g.shX=(Math.random()-.5)*i;g.shY=(Math.random()-.5)*i;}else{g.shX=0;g.shY=0;}
-  if(g.flash>0)g.flash-=dt*4;if(g.hitFlash>0)g.hitFlash-=dt*6;if(g.scoreFlash>0)g.scoreFlash-=dt*2;if(g.chromaShift>0)g.chromaShift-=dt*5;if(g.abilFlash>0)g.abilFlash-=dt*8;
+  if(g.shake>0){
+    g.shake-=dt;
+    const amp=g.shake*20;
+    const tx=Math.sin(g.t*42+(g.shPhaseX||0))*amp;
+    const ty=Math.cos(g.t*37+(g.shPhaseY||0))*amp;
+    g.shX=lerp(g.shX,tx,dt*22);
+    g.shY=lerp(g.shY,ty,dt*22);
+  }else{
+    g.shX=lerp(g.shX,0,dt*18);
+    g.shY=lerp(g.shY,0,dt*18);
+  }
+  if(g.flash>0)g.flash-=dt*3.4;if(g.hitFlash>0)g.hitFlash-=dt*5.4;if(g.scoreFlash>0)g.scoreFlash-=dt*1.85;if(g.chromaShift>0)g.chromaShift-=dt*4.2;if(g.abilFlash>0)g.abilFlash-=dt*7;
   // Update floating score pop-ups
-  for(let i=g.scorePops.length-1;i>=0;i--){const sp=g.scorePops[i];sp.y-=dt*100;sp.life-=dt;if(sp.life<=0)g.scorePops.splice(i,1);}
+  for(let i=g.scorePops.length-1;i>=0;i--){
+    const sp=g.scorePops[i];
+    if(typeof sp.max!=='number')sp.max=Math.max(.001,sp.life||.8);
+    if(typeof sp.vy!=='number')sp.vy=-(90+rng(0,18));
+    if(typeof sp.scale!=='number')sp.scale=.95;
+    sp.vy=lerp(sp.vy,-40,dt*4.5);
+    sp.y+=sp.vy*dt;
+    sp.scale=lerp(sp.scale,1.08,dt*4);
+    sp.life-=dt;
+    if(sp.life<=0)g.scorePops.splice(i,1);
+  }
   g.ghostA=g.cfg.ghost ? .15+Math.abs(Math.sin(g.t*6))*.65 : 1;
   // Start-of-point pause: ball frozen, waiting to launch
-  if(g.startPause>0){g.startPause-=dt;if(g.startPause<=0){const spd=g.rallyBase*getRallyMul(g.rallyHits);g.ballSpd=spd;g.bvx=g.pendingDir*spd;g.bvy=rng(-160,160);}}
+  if(g.cfg.enemy.id==='thefool'&&g.foolAscPending&&g.foolAscT<=0){
+    const abilityBannerActive=(g.foolSpecT>0&&g.foolSpecTextT>0);
+    if(!abilityBannerActive){
+      if(g.foolAscPendingDelay>0)g.foolAscPendingDelay-=dt;
+      if(g.foolAscPendingDelay<=0){
+        beginFoolAscension(g,g.foolAscPendingFrom,g.foolAscPendingTo,g.foolAscPendingSeq||'SEER');
+        g.foolAscPending=false;
+        g.foolAscPendingFrom='';
+        g.foolAscPendingTo='';
+        g.foolAscPendingSeq='';
+      }
+    }
+  }
+  const holdFoolServe=g.cfg.enemy.id==='thefool'&&((g.foolAscT>0)||(g.foolAscPending)||(g.foolDialogActive&&g.foolDialogBlocking)||(g.foolIntroTopT>0));
+  if(g.startPause>0&&!holdFoolServe){
+    g.startPause-=dt;
+    if(g.startPause<=0){
+      const spd=g.rallyBase*getRallyMul(g.rallyHits);
+      g.ballSpd=spd;
+      g.bvx=g.pendingDir*spd;
+      g.bvy=(typeof g.pendingVy==='number'?g.pendingVy:rng(-160,160));
+    }
+  }
   if(g.ghostT>0){g.ghostT-=dt;if(g.ghostT<=0)g.ghostBall=false;}
   if(g.wallT>0){g.wallT-=dt;if(g.wallT<=0)g.placedWall=null;}
   if(g.shrinkT>0){g.shrinkT-=dt;}
@@ -552,29 +921,123 @@ function update(dt){
   if(g.foolDistortT>0)g.foolDistortT-=dt;
   if(g.foolAscPulse>0)g.foolAscPulse-=dt;
   if(g.foolLineT>0)g.foolLineT-=dt;
+  if(g.foolLineLockT>0)g.foolLineLockT-=dt;
+  if(g.foolScoreVoiceT>0)g.foolScoreVoiceT-=dt;
   if(g.foolSpecTextT>0)g.foolSpecTextT-=dt;
+  if(g.foolLine&&g.foolLineT>0&&g.foolLineShow<g.foolLine.length){
+    g.foolLineTypeT-=dt;
+    while(g.foolLineTypeT<=0&&g.foolLineShow<g.foolLine.length){
+      const ch=g.foolLine[g.foolLineShow]||'';
+      g.foolLineShow++;
+      g.foolLineTypeT+=nextTypeDelay(ch);
+    }
+  }
+  if(g.foolDialogActive&&g.foolDialogBlocking&&g.foolDialogLine&&g.foolDialogShow<g.foolDialogLine.length){
+    g.foolDialogTypeT-=dt;
+    while(g.foolDialogTypeT<=0&&g.foolDialogShow<g.foolDialogLine.length){
+      const ch=g.foolDialogLine[g.foolDialogShow]||'';
+      g.foolDialogShow++;
+      g.foolDialogTypeT+=nextTypeDelay(ch);
+    }
+  }
+  if(g.foolAscT>0&&g.foolAscDialog&&g.foolAscDialogShow<g.foolAscDialog.length){
+    g.foolAscDialogTypeT-=dt;
+    while(g.foolAscDialogTypeT<=0&&g.foolAscDialogShow<g.foolAscDialog.length){
+      const ch=g.foolAscDialog[g.foolAscDialogShow]||'';
+      g.foolAscDialogShow++;
+      g.foolAscDialogTypeT+=nextTypeDelay(ch);
+    }
+  }
+
+  if(g.foolSpecSay&&g.foolSpecTextT>0){
+    g.foolSpecTypeT-=dt;
+    while(g.foolSpecTypeT<=0&&g.foolSpecSayShow<g.foolSpecSay.length){
+      const ch=g.foolSpecSay[g.foolSpecSayShow]||'';
+      g.foolSpecSayShow++;
+      let add=.018;
+      if(ch===' '||ch==='\t')add=.05;
+      else if(ch===','||ch===';'||ch===':')add=.16;
+      else if(ch==='.'||ch==='!'||ch==='?'||ch==='…')add=.34;
+      else if(ch==='—'||ch==='-')add=.24;
+      g.foolSpecTypeT+=add;
+    }
+  }
   if(g.foolSpecGapT>0)g.foolSpecGapT-=dt;
+  const foolQuoteActive=(
+    (g.foolDialogActive&&g.foolDialogBlocking) ||
+    (g.foolLineT>0&&!!g.foolLine) ||
+    (g.foolAscT>0&&!!g.foolAscDialog) ||
+    (g.foolSpecTextT>0&&!!g.foolSpecSay)
+  );
+  if(foolQuoteActive)g.foolQuoteLockT=1;
+  else if(g.foolQuoteLockT>0)g.foolQuoteLockT-=dt;
+  if(g.foolAscT>0)g.foolAscT-=dt;
+  if(g.foolIntroTopT>0)g.foolIntroTopT-=dt;
+  if(g.foolSwapT>0)g.foolSwapT-=dt;
+  if(g.foolPaceLockT>0)g.foolPaceLockT-=dt;
+  if(g.foolDialogActive&&g.foolDialogBlocking){g.foolDialogPulse=(g.foolDialogPulse||0)+dt;g.foolDialogFade=Math.min(1,(g.foolDialogFade||0)+dt*.5);return;}
   if(g.cfg.enemy.id==='thefool'){
+    const foolBusy=(g.foolAscT>0)||(g.foolDialogActive&&g.foolDialogBlocking)||(g.foolSpecT>0&&g.foolSpecTextT>0)||(g.foolSwapT>0)||g.startPause>0||(g.foolPaceLockT>0);
+    if(g.foolPointGate&&g.startPause>0&&!g.afterBall&&g.multiBalls.length===0)g.foolPointGate=false;
+    g.foolAmbientTick-=dt;
+    if(g.foolAmbientTick<=0&&!foolBusy){
+      if(g.foolStartAmbientBag&&g.foolStartAmbientBag.length&&Math.random()<.35){
+        const startLine=g.foolStartAmbientBag.pop();
+        if(startLine)foolSpeak(g,[startLine],3.7,false,false);
+      }else{
+        const key=foolStageToKey(g.foolStage||1);
+        foolSpeak(g,FOOL_SEQ_AMBIENT[key]||FOOL_SEQ_AMBIENT.seer,3.9,false,false);
+      }
+      g.foolAmbientTick=13.5+Math.random()*5.8;
+      g.foolPaceLockT=Math.max(g.foolPaceLockT,.75);
+    }
     if(g.foolTargetSpd>0)g.aiSpd=lerp(g.aiSpd,g.foolTargetSpd,dt*1.8);
     if(g.foolTargetReact>0)g.aiReact=lerp(g.aiReact,g.foolTargetReact,dt*1.6);
     if(g.foolClone){g.cloneY=lerp(g.cloneY,g.by,dt*3);g.cloneY=clamp(g.cloneY,g.eH/2,GH-g.eH/2);}
+    if(g.foolSwapT>0){
+      if(Math.random()<dt*9){g.flash=Math.max(g.flash,.08);g.flashCol=[.9,.9,1];}
+      g.foolDistortT=Math.max(g.foolDistortT,.32);
+      g.ballHideT=Math.max(g.ballHideT,.08);
+    }
     for(const k of Object.keys(g.foolSpecCDs||{})){if(g.foolSpecCDs[k]>0)g.foolSpecCDs[k]-=dt;}
     if(g.foolSpecT>0){
       g.foolSpecT-=dt;
       const sid=g.foolSpec;
       if(sid==='seer'){
         g.aiReact=Math.max(g.aiReact,.97);
+        g.foolSeerTick-=dt;
+        if(g.foolSeerTick<=0&&g.startPause<=0){
+          const edgeTarget=g.py+((Math.random()<.5?-1:1)*g.ph*0.48);
+          g.bvy+=clamp((edgeTarget-g.by)*1.35,-120,120);
+          g.bvy=clamp(g.bvy,-g.ballSpd*1.6,g.ballSpd*1.6);
+          addSparks(g,g.bx,g.by,5,55,[.82,.9,1]);
+          g.foolSeerTick=.34+Math.random()*.22;
+        }
       }else if(sid==='clown'){
-        if(g.ctrlInvertT<.3)g.ctrlInvertT=.3;
+        if(g.ctrlInvertT<.9)g.ctrlInvertT=.9;
+        g.foolClownTick-=dt;
+        if(g.foolClownTick<=0&&g.startPause<=0){
+          const fakeY=clamp(g.by+rng(-80,80),12,GH-12);
+          g.scorePops.push({x:GW*.5+rng(-50,50),y:fakeY,text:'FAKE',life:.28});
+          g.py=clamp(g.py+rng(-34,34),g.ph/2,GH-g.ph/2);
+          g.pStunT=Math.max(g.pStunT,.1);
+          g.flash=Math.max(g.flash,.08);g.flashCol=[.86,.74,1];
+          g.foolClownTick=.46+Math.random()*.24;
+        }
       }else if(sid==='magician'){
-        if(Math.random()<dt*5&&g.startPause<=0){
+        g.foolMagicianTick-=dt;
+        if(g.foolMagicianTick<=0&&g.startPause<=0){
           g.ey=clamp(g.by+rng(-30,30),g.eH/2,GH-g.eH/2);
+          g.ballHideT=Math.max(g.ballHideT,.12);
           g.blinkFlash=Math.max(g.blinkFlash,.7);
+          g.foolMagicianTick=.26+Math.random()*.2;
         }
       }else if(sid==='faceless'){
-        if(Math.random()<dt*2.4&&g.startPause<=0){
+        g.foolFacelessTick-=dt;
+        if(g.foolFacelessTick<=0&&g.startPause<=0){
           g.ey=clamp(g.ey+rng(-80,80),g.eH/2,GH-g.eH/2);
           g.blinkFlash=Math.max(g.blinkFlash,.55);
+          g.foolFacelessTick=.5+Math.random()*.28;
         }
       }else if(sid==='marionettist'||sid==='bizarro'||sid==='fool'){
         for(let i=g.foolPuppets.length-1;i>=0;i--){
@@ -598,22 +1061,61 @@ function update(dt){
           g.foolConcealTick=.85+Math.random()*1;
         }
       }
+      if(sid==='trickroom'){
+        g.foolTrickTick-=dt;
+        if(g.foolTrickTick<=0&&g.startPause<=0){
+          g.ctrlInvertT=Math.max(g.ctrlInvertT,1.25);
+          g.bvy+=(Math.random()-.5)*280;
+          g.bvy=clamp(g.bvy,-g.ballSpd*1.5,g.ballSpd*1.5);
+          g.flash=Math.max(g.flash,.1);g.flashCol=[.86,.74,1];
+          g.foolTrickTick=.35+Math.random()*.22;
+        }
+      }
+      if(sid==='oraclebreak'){
+        g.foolOracleBreakTick-=dt;
+        if(g.foolOracleBreakTick<=0&&g.startPause<=0){
+          g.bvx*=Math.max(.88,1-(Math.random()*.08));
+          g.bvy+=(Math.random()-.5)*230;
+          g.bvy=clamp(g.bvy,-g.ballSpd*1.8,g.ballSpd*1.8);
+          g.chromaShift=Math.max(g.chromaShift,.45);
+          g.foolOracleBreakTick=.55+Math.random()*.35;
+        }
+      }
+      if(sid==='judgment'){
+        g.foolJudgmentTick-=dt;
+        if(g.foolJudgmentTick<=0&&g.startPause<=0){
+          g.abCD=Math.max(g.abCD,g.pad.cd*g.cdMul*.75);
+          g.pStunT=Math.max(g.pStunT,.14);
+          g.flash=Math.max(g.flash,.12);g.flashCol=[.98,.84,.9];
+          addSparks(g,g.px,g.py,8,90,[.95,.8,.9]);
+          g.foolJudgmentTick=.7+Math.random()*.4;
+        }
+      }
       if(sid==='fool'){
         g.foolDistortT=Math.max(g.foolDistortT,.2);
-        if(g.ctrlInvertT<.35)g.ctrlInvertT=.35;
-        if(Math.random()<dt*8){g.flash=Math.max(g.flash,.08);g.flashCol=[.85,.85,1];}
+        if(g.ctrlInvertT<.5)g.ctrlInvertT=.5;
+        g.foolFoolTick-=dt;
+        if(g.foolFoolTick<=0){
+          g.flash=Math.max(g.flash,.065);g.flashCol=[.85,.85,1];
+          g.foolFoolTick=.14+Math.random()*.1;
+        }
       }
       if(g.foolSpecT<=0){
         g.foolSpec='';
+        g.foolSpecSay='';
+        g.foolSpecSayShow=0;
+        g.foolSpecTypeT=0;
         g.foolPuppets=[];
-        g.foolSpecGapT=.35;
+        g.foolSpecGapT=1.45;
       }
-    }else if(g.startPause<=0&&g.foolSpecGapT<=0){
+    }else if(g.startPause<=0&&g.foolSpecGapT<=0&&g.foolAscT<=0&&g.foolSwapT<=0&&!(g.foolDialogActive&&g.foolDialogBlocking)&&g.foolQuoteLockT<=0){
       const pool=getUnlockedFoolSpecials(g);
       const ready=pool.filter(id=>(g.foolSpecCDs[id]||0)<=0);
       if(ready.length){
-        const sid=ready[Math.floor(Math.random()*ready.length)];
+        const sid=pickFoolSpecial(g,ready);
         startFoolSpecial(g,sid);
+      }else{
+        g.foolSpecGapT=.65;
       }
     }
   }
@@ -707,14 +1209,20 @@ function update(dt){
   // Player - compute velocity from last frame position
   const sp=g.pSpd,hMax=HORIZ*g.horizMul;
   const invert=(g.ctrlInvertT>0?-1:1);
-  if(g.pStunT<=0){
+  if(g.perfectPilot){
+    const targetY=clamp(g.by,g.ph/2,GH-g.ph/2);
+    g.py=lerp(g.py,targetY,dt*28);
+  }else if(g.pStunT<=0){
     if(keysDown['w']||keysDown['arrowup'])g.py-=sp*dt*invert;
     if(keysDown['s']||keysDown['arrowdown'])g.py+=sp*dt*invert;
   }
   // VoidWalk: paddle teleports toward ball
   if(g.voidWalk&&g.bvx<0){g.py=lerp(g.py,g.by,dt*12);}
   g.py=clamp(g.py,g.ph/2,GH-g.ph/2);
-  if(g.pStunT<=0){
+  if(g.perfectPilot){
+    const targetX=clamp(PX_HOME+24, PAD_W/2+6, GW/2-PAD_W/2-20);
+    g.px=lerp(g.px,targetX,dt*10);
+  }else if(g.pStunT<=0){
     if(keysDown['a']||keysDown['arrowleft'])g.px-=sp*.55*dt*invert;
     if(keysDown['d']||keysDown['arrowright'])g.px+=sp*.55*dt*invert;
     if(!keysDown['a']&&!keysDown['arrowleft']&&!keysDown['d']&&!keysDown['arrowright'])g.px=lerp(g.px,PX_HOME,dt*4);
@@ -937,7 +1445,8 @@ function update(dt){
         const KB_THRESH=BASE_SPD*1.4; // only trigger above roughly 40% faster than base
         if(curSpd>KB_THRESH){
           // weaker opponents (lower difficulty index) suffer more knockback
-          const diffIdx=DIFF_RANKS.indexOf(g.cfg.diff);
+          const diffIdxRaw=DIFF_RANKS.indexOf(g.cfg.diff);
+          const diffIdx=diffIdxRaw>=0?diffIdxRaw:DIFF_RANKS.length-1;
           const maxIdx=DIFF_RANKS.length-1;
           // map 0->1.2, maxIdx->0.4 (can tweak these constants as desired)
           const kbMul=lerp(1.2,0.4,diffIdx/maxIdx);
@@ -1000,7 +1509,7 @@ function update(dt){
     for(let i=0;i<g.foolPuppets.length;i++){
       const p=g.foolPuppets[i];
       if(p.broken)continue;
-      const pw=8,ph=p.h;
+      const pw=p.w||8,ph=p.h;
       if(g.bx+bs2>p.x-pw/2&&g.bx-bs2<p.x+pw/2&&g.by+bs2>p.y-ph/2&&g.by-bs2<p.y+ph/2){
         const rel=clamp((g.by-p.y)/(ph/2),-1,1);
         const spd=Math.max(Math.hypot(g.bvx,g.bvy),g.ballSpd*1.04);
@@ -1072,7 +1581,7 @@ function update(dt){
       if(g.cfg.enemy.id==='thefool'&&g.foolPuppets.length&&ab.vx>0){
         for(let i=0;i<g.foolPuppets.length;i++){
           const p=g.foolPuppets[i];if(p.broken)continue;
-          const pw=8,ph=p.h;
+          const pw=p.w||8,ph=p.h;
           if(ab.x+bs2>p.x-pw/2&&ab.x-bs2<p.x+pw/2&&ab.y+bs2>p.y-ph/2&&ab.y-bs2<p.y+ph/2){
             const rel=clamp((ab.y-p.y)/(ph/2),-1,1);
             const spd=Math.max(Math.hypot(ab.vx,ab.vy),g.ballSpd*.95);
@@ -1085,13 +1594,13 @@ function update(dt){
           }
         }
       }
-      if(ab.x+bs2>GW){
+      if(g.goalLockT<=0&&ab.x+bs2>GW){
         if(g.cfg.enemy.id==='thefool'&&g.foolMiracle&&(g.foolMiracleCharges||0)>0){
           g.foolMiracleCharges--;
           ab.x=GW-26;ab.vx=-Math.abs(ab.vx||g.ballSpd);ab.vy+=(Math.random()-.5)*90;
           addSparks(g,GW-18,ab.y,16,120,[.9,.9,1]);
           foolSpeak(g,FOOL_ASCENT_LINES['MIRACLE INVOKER'],1.9);
-        }else{g.pScore+=1;onFoolPlayerScore(g);g.shake=.04;SFX.score();addSparks(g,GW,ab.y,6,80,[.6,.4,1]);g.scoreFlash=.5;g.scoreFlashSide=1;g.scorePops.push({x:GW-40,y:ab.y,text:'+1',life:.8});if(g.pScore>=g.winScore){g.done=true;g.result='win';}g.afterBall=null;}
+        }else{if(g.cfg.enemy.id==='thefool'){const s=applyFoolGoal(g,1);g.shake=.04;SFX.score();addSparks(g,GW,ab.y,6,80,[.6,.4,1]);if(!s.prevented){g.scoreFlash=.5;g.scoreFlashSide=1;g.scorePops.push({x:GW-40,y:ab.y,text:'+1',life:.8});}if(!g.done)resetBall(g,-1);g.afterBall=null;}else{g.goalLockT=.22;g.pScore+=1;g.shake=.04;SFX.score();addSparks(g,GW,ab.y,6,80,[.6,.4,1]);g.scoreFlash=.5;g.scoreFlashSide=1;g.scorePops.push({x:GW-40,y:ab.y,text:'+1',life:.8});if(g.pScore>=g.winScore){g.done=true;g.result='win';}g.afterBall=null;}}
       }
       else if(ab.x-bs2<0||ab.life<=0)g.afterBall=null;
     }
@@ -1148,7 +1657,7 @@ function update(dt){
     if(g.cfg.enemy.id==='thefool'&&g.foolPuppets.length&&mb.vx>0){
       for(let j=0;j<g.foolPuppets.length;j++){
         const p=g.foolPuppets[j];if(p.broken)continue;
-        const pw=8,ph=p.h;
+        const pw=p.w||8,ph=p.h;
         if(mb.x+bs2>p.x-pw/2&&mb.x-bs2<p.x+pw/2&&mb.y+bs2>p.y-ph/2&&mb.y-bs2<p.y+ph/2){
           const rel=clamp((mb.y-p.y)/(ph/2),-1,1);
           const spd=Math.max(Math.hypot(mb.vx,mb.vy),g.ballSpd*.92);
@@ -1169,7 +1678,7 @@ function update(dt){
       }
     }
     const owner=mb.owner||'player';
-    if(mb.x+bs2>GW){
+    if(g.goalLockT<=0&&mb.x+bs2>GW){
       let prevented=false;
       if(owner==='player'){
         if(g.cfg.enemy.id==='thefool'&&g.foolMiracle&&(g.foolMiracleCharges||0)>0){
@@ -1179,7 +1688,16 @@ function update(dt){
           foolSpeak(g,FOOL_ASCENT_LINES['MIRACLE INVOKER'],1.7);
           prevented=true;
         }else{
-          g.pScore+=g.triScore?3:g.dblScore?2:1;onFoolPlayerScore(g);g.shake=.06;SFX.score();addSparks(g,GW,mb.y,10,100,[.4,1,.5]);g.scoreFlash=1;g.scoreFlashSide=1;if(g.vampire&&g.lives<6)g.lives++;if(g.pScore>=g.winScore){g.done=true;g.result='win';}
+          const scoreAmt=(g.cfg.enemy.id==='thefool')?1:(g.triScore?3:g.dblScore?2:1);
+          if(g.cfg.enemy.id==='thefool'){
+            const s=applyFoolGoal(g,scoreAmt);
+            g.shake=.06;SFX.score();addSparks(g,GW,mb.y,10,100,[.4,1,.5]);
+            if(!s.prevented){g.scoreFlash=1;g.scoreFlashSide=1;}
+            if(!g.done)resetBall(g,-1);
+          }else{
+            g.pScore+=scoreAmt;g.shake=.06;SFX.score();addSparks(g,GW,mb.y,10,100,[.4,1,.5]);g.scoreFlash=1;g.scoreFlashSide=1;if(g.vampire&&g.lives<6)g.lives++;if(g.pScore>=g.winScore){g.done=true;g.result='win';}
+            g.goalLockT=.22;
+          }
         }
       }
       if(prevented)continue;
@@ -1187,7 +1705,8 @@ function update(dt){
     }
     if(mb.x-bs2<0&&mb.vx<0){
       if(owner==='enemy'){
-        g.eScore++;g.shake=.15;SFX.miss();addSparks(g,0,mb.y,10,80,[1,.3,.3]);g.scoreFlash=.5;g.scoreFlashSide=-1;g.flash=.2;g.flashCol=[1,.2,.2];if(g.eScore>=g.winScore){g.done=true;g.result='lose';g.lives--;}
+        if(g.cfg.enemy.id==='thefool'){triggerFoolScoreVoice(g,false);} 
+        g.eScore++;g.shake=.15;SFX.miss();addSparks(g,0,mb.y,10,80,[1,.3,.3]);g.scoreFlash=.5;g.scoreFlashSide=-1;g.flash=.2;g.flashCol=[1,.2,.2];if(g.eScore>=g.winScore){if(g.cfg.enemy.id==='thefool')g.foolLoseLine=FOOL_DEFEAT_LINES[Math.floor(Math.random()*FOOL_DEFEAT_LINES.length)];g.done=true;g.result='lose';g.lives--;}
       }
       g.multiBalls.splice(i,1);continue;
     }
@@ -1198,24 +1717,26 @@ function update(dt){
   }
 
   // Scoring
-  if(g.bx-bs2<0){
+  if(g.goalLockT<=0&&g.bx-bs2<0){
     if(g.shields>0&&!g.shUsed){g.shUsed=true;g.shields--;SFX.paddle();addSparks(g,20,g.by,18,140,[.5,.7,1]);resetBall(g,1);}
-    else{g.eScore++;g.shake=.24;g.chromaShift=.7;SFX.miss();addSparks(g,0,g.by,16,120,[1,.3,.3]);g.scoreFlash=1;g.scoreFlashSide=-1;g.flash=.3;g.flashCol=[1,.2,.2];
+    else{g.goalLockT=.22;if(g.cfg.enemy.id==='thefool'){triggerFoolScoreVoice(g,false);}g.eScore++;g.shake=.24;g.chromaShift=.7;SFX.miss();addSparks(g,0,g.by,16,120,[1,.3,.3]);g.scoreFlash=1;g.scoreFlashSide=-1;g.flash=.3;g.flashCol=[1,.2,.2];
       // Berserker: reset stacks on enemy score
       if(g.berserker){g.berserkerStacks=0;g.bs=g._berserkerBase;g.ballSpd=g.bs;}
-        if(g.eScore>=g.winScore){g.done=true;g.result='lose';g.lives--;}else resetBall(g,1);}}
-      if(g.bx+bs2>GW){
+        if(g.eScore>=g.winScore){if(g.cfg.enemy.id==='thefool')g.foolLoseLine=FOOL_DEFEAT_LINES[Math.floor(Math.random()*FOOL_DEFEAT_LINES.length)];g.done=true;g.result='lose';g.lives--;}else resetBall(g,1);}}
+      if(g.goalLockT<=0&&g.bx+bs2>GW){
         if(g.cfg.enemy.id==='thefool'&&g.foolMiracle&&(g.foolMiracleCharges||0)>0){
           g.foolMiracleCharges--;
           g.bx=GW-26;g.bvx=-Math.abs(g.bvx||g.ballSpd);g.bvy+=(Math.random()-.5)*120;
           g.shake=.08;g.flash=.16;g.flashCol=[.9,.9,1];
           addSparks(g,GW-20,g.by,18,130,[.9,.9,1]);
           foolSpeak(g,FOOL_ASCENT_LINES['MIRACLE INVOKER'],2.1);
-        }else{const scoreAmt=g.triScore?3:g.dblScore?2:1;g.pScore+=scoreAmt;onFoolPlayerScore(g);g.shake=.12;g.chromaShift=0.6;SFX.score();addSparks(g,GW,g.by,16,120,[.4,1,.5]);g.scoreFlash=1;g.scoreFlashSide=1;g.flash=.2;g.flashCol=[.4,1,.5];if(g.vampire&&g.lives<6)g.lives++;
+        }else{const scoreAmt=(g.cfg.enemy.id==='thefool')?1:(g.triScore?3:g.dblScore?2:1);
+      if(g.cfg.enemy.id==='thefool'){const s=applyFoolGoal(g,scoreAmt);g.shake=.12;g.chromaShift=0.6;SFX.score();addSparks(g,GW,g.by,16,120,[.4,1,.5]);if(!s.prevented){g.scoreFlash=1;g.scoreFlashSide=1;}if(!g.done)resetBall(g,-1);g.flash=.2;g.flashCol=[.4,1,.5];if(g.vampire&&g.lives<6)g.lives++;}
+      else{g.goalLockT=.22;g.pScore+=scoreAmt;g.shake=.12;g.chromaShift=0.6;SFX.score();addSparks(g,GW,g.by,16,120,[.4,1,.5]);g.scoreFlash=1;g.scoreFlashSide=1;g.flash=.2;g.flashCol=[.4,1,.5];if(g.vampire&&g.lives<6)g.lives++;
     // Score pop-up: floating text showing points
     g.scorePops.push({x:GW-40,y:g.by,text:'+'+scoreAmt,life:.8});
     if(g.siphon){g.aiReact=Math.max(g.aiReact*0.95,0.02);g.aiSpd=Math.max(g.aiSpd*0.97,80);}
-        if(g.pScore>=g.winScore){g.done=true;g.result='win';}else resetBall(g,-1);}
+        if(g.pScore>=g.winScore){g.done=true;g.result='win';}else resetBall(g,-1);} }
       }
 
   // AI (frozen = no move, but not during lightning channel)
@@ -1542,6 +2063,23 @@ let _sp=null;function getSP(ctx){if(_sp)return _sp;const c=document.createElemen
 
 let _bg=null;function getBG(ctx){if(_bg)return _bg;_bg=document.createElement('canvas');_bg.width=GW;_bg.height=GH;const bx=_bg.getContext('2d');const grd=bx.createLinearGradient(0,0,0,GH);grd.addColorStop(0,'#0a0a0e');grd.addColorStop(1,'#14141a');bx.fillStyle=grd;bx.fillRect(0,0,GW,GH);bx.fillStyle='rgba(255,255,255,0.02)';for(let y=0;y<GH;y+=2)bx.fillRect(0,y,GW,1);const vg=bx.createRadialGradient(GW/2,GH/2,100,GW/2,GH/2,800);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.6)');bx.fillStyle=vg;bx.fillRect(0,0,GW,GH);return _bg;}
 
+function drawSmokeTextAura(ctx,x,y,t,intensity=1){
+  const a=.028*intensity;
+  for(let i=0;i<10;i++){
+    const ang=t*0.32+i*0.62;
+    const rx=12+(i%4)*5+Math.sin(t*0.75+i)*1.2;
+    const ry=7+(i%3)*3+Math.cos(t*0.85+i*.7)*1.1;
+    const cx=x+Math.cos(ang)*rx;
+    const cy=y+Math.sin(ang*1.05)*ry;
+    ctx.globalAlpha=a*(.75+.25*Math.sin(t*0.9+i));
+    ctx.fillStyle='rgba(220,220,245,0.9)';
+    ctx.beginPath();
+    ctx.arc(cx,cy,4.2+(i%2),0,Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
 function draw(ctx,cw,ch){
   if(!g)return;const sx=cw/GW,sy=ch/GH;ctx.clearRect(0,0,cw,ch);ctx.save();
   const chroma=g.chromaShift*3;ctx.translate(g.shX*sx,g.shY*sy);ctx.scale(sx,sy);
@@ -1565,6 +2103,15 @@ function draw(ctx,cw,ch){
     fog.addColorStop(1,'rgba(0,0,0,0.5)');
     ctx.fillStyle=fog;
     ctx.fillRect(GW*.45,0,GW*.55,GH);
+    const aura=.4+.6*Math.sin(g.t*1.8);
+    ctx.globalAlpha=.07+.06*aura;
+    ctx.strokeStyle='rgba(210,210,240,0.6)';
+    ctx.lineWidth=1;
+    for(let i=0;i<5;i++){
+      const r=80+i*34+Math.sin(g.t*2+i)*8;
+      ctx.beginPath();ctx.arc(EX,g.ey,r,Math.PI*.65,Math.PI*1.35);ctx.stroke();
+    }
+    ctx.globalAlpha=1;
   }
 
   if(g.flash>0){const[r,g2,b]=g.flashCol;ctx.fillStyle=`rgba(${r*255|0},${g2*255|0},${b*255|0},${g.flash*.055})`;ctx.fillRect(0,0,GW,GH);}
@@ -1583,16 +2130,19 @@ function draw(ctx,cw,ch){
   ctx.shadowColor=col.g+'0.22)';ctx.shadowBlur=22;ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fillText(g.pScore,GW/2-100,16);ctx.fillText(g.eScore,GW/2+100,16);
   ctx.shadowBlur=8;ctx.fillStyle='#fff';ctx.fillText(g.pScore,GW/2-100,16);ctx.fillText(g.eScore,GW/2+100,16);ctx.shadowBlur=0;
 
-  // Difficulty badge in top center
-  ctx.font='bold 10px "Share Tech Mono",monospace';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillStyle=dCol;
-  ctx.shadowColor=dCol;ctx.shadowBlur=6;ctx.fillText((g.cfg.enemy.id==='thefool'?'F- 🃏':g.cfg.diff)+(g.cfg.boss?' BOSS':''),GW/2,4);ctx.shadowBlur=0;
-  if(g.cfg.enemy.id==='thefool'){
-    const curSeq=FOOL_SEQUENCES[Math.max(0,Math.min((g.foolStage||1)-1,FOOL_SEQUENCES.length-1))]||'SEER';
-    ctx.fillStyle='#bbb';ctx.font='8px "Share Tech Mono",monospace';ctx.textAlign='center';ctx.textBaseline='top';
-    ctx.fillText('SEQUENCE: '+curSeq,GW/2,14);
+  // Difficulty badge in top center (suppressed for The Fool for cleaner aura presentation)
+  if(g.cfg.enemy.id!=='thefool'){
+    ctx.font='bold 10px "Share Tech Mono",monospace';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillStyle=dCol;
+    ctx.shadowColor=dCol;ctx.shadowBlur=6;ctx.fillText(g.cfg.diff+(g.cfg.boss?' BOSS':''),GW/2,4);ctx.shadowBlur=0;
   }
+  const showFoolDialogBlocking=g.cfg.enemy.id==='thefool'&&g.foolDialogActive&&g.foolDialogBlocking;
+  const showFoolAsc=g.cfg.enemy.id==='thefool'&&g.foolAscT>0&&g.foolAscLabel&&!showFoolDialogBlocking;
+  const showFoolSpec=g.cfg.enemy.id==='thefool'&&g.foolSpecT>0&&g.foolSpecTextT>0&&!showFoolDialogBlocking&&!showFoolAsc;
+  const showFoolSwap=g.cfg.enemy.id==='thefool'&&g.foolSwapT>0&&!showFoolDialogBlocking&&!showFoolAsc&&!showFoolSpec;
+  const showFoolLine=g.cfg.enemy.id==='thefool'&&g.foolLineT>0&&!showFoolDialogBlocking&&!showFoolAsc&&!showFoolSpec&&!showFoolSwap;
+  const majorTextBusy=showFoolDialogBlocking||showFoolAsc||showFoolSpec||showFoolSwap||showFoolLine;
   // center-screen special ability indicator
-  if(g.wStormActive){
+  if(g.wStormActive&&!majorTextBusy){
     const pulse=.55+.45*Math.sin(g.t*6);
     ctx.fillStyle='#aee';ctx.font='bold 18px "Share Tech Mono",monospace';
     ctx.textAlign='center';ctx.textBaseline='middle';
@@ -1602,28 +2152,104 @@ function draw(ctx,cw,ch){
     ctx.globalAlpha=1;
     ctx.shadowBlur=0;
   }
-  if(g.cfg.enemy.id==='thefool'&&g.foolSpecT>0&&g.foolSpecTextT>0){
+  if(showFoolSpec){
     const pulse=.55+.45*Math.sin(g.t*6.5);
-    ctx.fillStyle='#d7d7e8';ctx.font='bold 16px "Share Tech Mono",monospace';
+    drawSmokeTextAura(ctx,GW/2,GH*0.31,g.t,1.35);
+    ctx.fillStyle='#e5e5f4';ctx.font='bold 17px "Times New Roman",serif';
     ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.shadowColor='rgba(190,190,220,0.85)';ctx.shadowBlur=14;
+    ctx.shadowColor='rgba(215,215,245,0.95)';ctx.shadowBlur=18;
     ctx.globalAlpha=.62+.34*pulse;
     ctx.fillText('ENEMY SPECIAL: '+(g.foolSpecLabel||'THE FOOL'),GW/2,GH*0.31);
+    const say=(g.foolSpecSay||'').slice(0,Math.floor(g.foolSpecSayShow||0));
+    if(say){
+      drawSmokeTextAura(ctx,GW/2,GH*0.31+20,g.t+1.1,1.1);
+      ctx.globalAlpha=.88;
+      ctx.fillStyle='rgba(230,230,250,0.96)';
+      ctx.font='italic 12px "Times New Roman",serif';
+      ctx.shadowColor='rgba(210,210,245,0.85)';ctx.shadowBlur=12;
+      ctx.fillText('“'+say+'”',GW/2,GH*0.31+20);
+    }
     ctx.globalAlpha=1;ctx.shadowBlur=0;
   }
-  if(g.cfg.enemy.id==='thefool'&&g.foolLineT>0){
-    const dg=ctx.createLinearGradient(0,0,0,GH*.42);
-    dg.addColorStop(0,'rgba(190,190,210,0.08)');
-    dg.addColorStop(1,'rgba(30,30,40,0)');
-    ctx.fillStyle=dg;ctx.fillRect(0,0,GW,GH*.42);
-    const ta=g.foolLineMax>0?Math.min(1,g.foolLineT/g.foolLineMax):1;
-    const pulse=.6+.4*Math.sin(g.t*5);
-    ctx.globalAlpha=Math.min(1,.25+ta*.9)*pulse;
-    ctx.fillStyle='#ddd';
-    ctx.font='10px "Share Tech Mono",monospace';
-    ctx.textAlign='center';ctx.textBaseline='top';
-    ctx.shadowColor='rgba(210,210,240,0.7)';ctx.shadowBlur=10;
-    ctx.fillText(g.foolLine,GW/2,20);
+  if(showFoolSwap){
+    const pulse=.4+.6*Math.sin(g.t*9.5);
+    ctx.globalAlpha=.45+.4*pulse;
+    ctx.fillStyle='rgba(235,235,255,0.9)';
+    ctx.font='bold 18px "Share Tech Mono",monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(220,220,255,0.95)';ctx.shadowBlur=18;
+    ctx.fillText('YOU WERE THE FOOL — THE BOARD WAS YOUR MIRROR',GW/2,GH*.42);
+    ctx.shadowBlur=0;ctx.globalAlpha=1;
+  }
+  if(showFoolAsc){
+    const total=Math.max(.001,g.foolAscMax||1);
+    const elapsed=total-g.foolAscT;
+    const animHold=0.3,animMoveDur=1.25,animDur=animHold+animMoveDur,preQuoteGap=1.5,quoteDur=1.5,postGap=1.0;
+    const quoteStart=animDur+preQuoteGap;
+    const quoteEnd=quoteStart+quoteDur;
+    const moveT=elapsed<=animHold?0:Math.max(0,Math.min(1,(elapsed-animHold)/Math.max(.001,animMoveDur)));
+    const fadeT=Math.min(1,moveT*1.55);
+    const centerY=GH*.3;
+    const step=24;
+    const topY=centerY-step;
+    const bottomY=centerY+step;
+    const fromLabel=g.foolAscFromLabel||g.foolAscLabel;
+    const toLabel=g.foolAscToLabel||g.foolAscLabel;
+    const tailStart=Math.max(0,total-.12);
+    const fadeOut=elapsed>tailStart?Math.max(0,1-((elapsed-tailStart)/.12)):1;
+
+    ctx.fillStyle='#e6e6f6';
+    ctx.font='bold 22px "Share Tech Mono",monospace';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(196,196,236,0.75)';
+    ctx.shadowBlur=10;
+
+    if(moveT<=0&&fromLabel){
+      ctx.globalAlpha=.95*fadeOut;
+      ctx.fillText(fromLabel,GW/2,centerY);
+    }else if(moveT<1&&fromLabel&&toLabel){
+      const yFrom=lerp(centerY,topY,moveT);
+      const yTo=lerp(bottomY,centerY,moveT);
+      ctx.globalAlpha=Math.max(0,(1-fadeT)*fadeOut);
+      ctx.fillText(fromLabel,GW/2,yFrom);
+      ctx.globalAlpha=Math.max(0,fadeT*fadeOut);
+      ctx.fillText(toLabel,GW/2,yTo);
+    }else{
+      ctx.globalAlpha=.95*fadeOut;
+      ctx.fillText(toLabel,GW/2,centerY);
+    }
+    ctx.shadowBlur=0;
+    ctx.globalAlpha=1;
+
+    if(elapsed>=quoteStart&&elapsed<quoteEnd&&g.foolAscDialog){
+      const q=(elapsed-quoteStart)/Math.max(.001,quoteDur);
+      const dFade=Math.max(0,Math.min(1,q/.14))*Math.max(0,Math.min(1,(1-q)/.14));
+      const dy=centerY+42;
+      ctx.globalAlpha=.88*dFade;
+      ctx.fillStyle='rgba(224,224,246,0.95)';
+      ctx.font='bold 13px "Times New Roman",serif';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.shadowColor='rgba(188,188,228,0.25)';
+      ctx.shadowBlur=4;
+      const ascSay=(g.foolAscDialog||'').slice(0,Math.floor(g.foolAscDialogShow||0));
+      ctx.fillText(ascSay,GW/2,dy,GW*.78);
+      ctx.shadowBlur=0;
+      ctx.globalAlpha=1;
+    }
+  }
+  if(g.cfg.enemy.id==='thefool'&&g.foolIntroTopT>0){
+    const a=Math.max(0,Math.min(1,g.foolIntroTopT/2.6));
+    const fade=Math.min(1,(1-a)*2.6)*(a>.12?1:Math.max(0,a/.12));
+    const y=GH*.2;
+    ctx.globalAlpha=.92*fade;
+    drawSmokeTextAura(ctx,GW/2,y,g.t+2.1,1.15);
+    ctx.fillStyle='#e2e2f2';
+    ctx.font='bold 15px "Share Tech Mono",monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(190,190,230,0.8)';ctx.shadowBlur=10;
+    ctx.fillText('SEQUENCE 09 — SEER',GW/2,y);
     ctx.shadowBlur=0;ctx.globalAlpha=1;
   }
   if(g.cfg.enemy.id==='thefool'&&g.foolAscPulse>0){
@@ -1643,9 +2269,31 @@ function draw(ctx,cw,ch){
     ctx.globalAlpha=1;
   }
   if(g.ctrlInvertT>0){
-    ctx.fillStyle='#f8d';ctx.font='8px "Share Tech Mono",monospace';
+    const ia=Math.min(1,g.ctrlInvertT/1.3);
+    const pulse=.5+.5*Math.sin(g.t*10.5);
     ctx.textAlign='center';ctx.textBaseline='top';
-    ctx.fillText('CONTROLS INVERTED',GW/2,46);
+    ctx.globalAlpha=.78+.22*pulse;
+    ctx.fillStyle='rgba(255,150,225,0.98)';
+    ctx.font='bold 12px "Share Tech Mono",monospace';
+    ctx.shadowColor='rgba(255,120,210,0.85)';ctx.shadowBlur=12;
+    ctx.fillText('CONTROLS INVERTED',GW/2,44);
+    ctx.shadowBlur=0;
+
+    const confCols=['#ff5ad6','#ffd54a','#55e7ff','#86ff76','#ff8b5a'];
+    const corners=[[20,20,1,1],[GW-20,20,-1,1],[20,GH-20,1,-1],[GW-20,GH-20,-1,-1]];
+    for(let c=0;c<corners.length;c++){
+      const [cx,cy,sx,sy]=corners[c];
+      for(let i=0;i<9;i++){
+        const tt=g.t*3.2+i*0.73+c*0.41;
+        const dx=(8+i*7+Math.sin(tt*1.4)*8)*sx;
+        const dy=(6+i*5+Math.cos(tt*1.1)*7)*sy;
+        const size=2.2+((i%3)*.9);
+        ctx.globalAlpha=(.16+.16*Math.abs(Math.sin(tt*2.2)))*ia;
+        ctx.fillStyle=confCols[(i+c)%confCols.length];
+        ctx.fillRect(cx+dx-size*.5,cy+dy-size*.5,size,size);
+      }
+    }
+    ctx.globalAlpha=1;
   }
 
   // Placed wall
@@ -1674,32 +2322,14 @@ function draw(ctx,cw,ch){
   ctx.shadowColor=`rgba(${_eDispShdw},${frozen ? .4 : eSh ? .3 : .55})`;ctx.shadowBlur=frozen?8:eSh?3:_eGlow;
   ctx.fillStyle=_eDispCol;ctx.fillRect(EX-PAD_W/2,g.ey-g.eH/2,PAD_W,g.eH);ctx.shadowBlur=0;ctx.globalAlpha=1;
   if(_eId==='thefool'){
-    const pulse=.65+.35*Math.sin(g.t*4.2);
-    const cloakW=32,cloakH=Math.max(70,g.eH+24);
-    ctx.globalAlpha=.9;
-    ctx.fillStyle='rgba(12,12,16,0.92)';
-    ctx.beginPath();
-    ctx.moveTo(EX, g.ey-cloakH*.56);
-    ctx.lineTo(EX-cloakW*.48, g.ey+cloakH*.46);
-    ctx.lineTo(EX+cloakW*.48, g.ey+cloakH*.46);
-    ctx.closePath();
-    ctx.fill();
-    // jester hat
+    const hatY=g.ey-g.eH/2-8;
+    ctx.globalAlpha=.92;
     ctx.fillStyle='rgba(20,20,28,0.95)';
     ctx.beginPath();
-    ctx.moveTo(EX-14,g.ey-cloakH*.56);
-    ctx.lineTo(EX+14,g.ey-cloakH*.56);
-    ctx.lineTo(EX+4,g.ey-cloakH*.78);
-    ctx.lineTo(EX-4,g.ey-cloakH*.78);
-    ctx.closePath();
+    ctx.moveTo(EX-14,hatY+6);ctx.lineTo(EX+14,hatY+6);ctx.lineTo(EX+4,hatY-12);ctx.lineTo(EX-4,hatY-12);ctx.closePath();
     ctx.fill();
-    ctx.beginPath();ctx.arc(EX-8,g.ey-cloakH*.8,3.2,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.arc(EX+8,g.ey-cloakH*.8,3.2,0,Math.PI*2);ctx.fill();
-    // eyes
-    ctx.globalAlpha=.75+.2*pulse;
-    ctx.fillStyle='#d7d7e8';
-    ctx.fillRect(EX-6,g.ey-cloakH*.45,3,2);
-    ctx.fillRect(EX+3,g.ey-cloakH*.45,3,2);
+    ctx.beginPath();ctx.arc(EX-8,hatY-12,3.2,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(EX+8,hatY-12,3.2,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=1;
   }
   // Shrink scan lines
@@ -1728,17 +2358,20 @@ function draw(ctx,cw,ch){
     for(let i=0;i<g.foolPuppets.length;i++){
       const p=g.foolPuppets[i];
       const fa=p.broken?Math.max(0,p.fade):p.a;
-      const yTop=Math.max(0,p.y-p.h/2-18);
+      const anchorX=(p.ax??p.x)+Math.sin(g.t*2.8+i*0.9)*5;
+      const anchorY=-4;
       // string
-      ctx.globalAlpha=.24*fa;ctx.strokeStyle='#cfd1ff';ctx.lineWidth=.8;
-      ctx.beginPath();ctx.moveTo(p.x,yTop);ctx.lineTo(p.x,p.y);ctx.stroke();
+      ctx.globalAlpha=.35*fa;ctx.strokeStyle='#e6e8ff';ctx.lineWidth=1.1;
+      ctx.beginPath();ctx.moveTo(anchorX,anchorY);ctx.lineTo(p.x,p.y-p.h/2+2);ctx.stroke();
+      ctx.globalAlpha=.22*fa;ctx.fillStyle='rgba(225,228,255,0.9)';ctx.beginPath();ctx.arc(anchorX,anchorY+2,1.6,0,Math.PI*2);ctx.fill();
       // paddle body
       ctx.globalAlpha=.42*fa;ctx.fillStyle='#d6d8ff';ctx.shadowColor='rgba(210,214,255,0.45)';ctx.shadowBlur=6;
-      ctx.fillRect(p.x-4,p.y-p.h/2,8,p.h);
+      ctx.fillRect(p.x-(p.w||8)/2,p.y-p.h/2,p.w||8,p.h);
       ctx.shadowBlur=0;
       if(p.broken){
         ctx.globalAlpha=.18*fa;ctx.strokeStyle='#eef';ctx.lineWidth=.7;
-        ctx.beginPath();ctx.moveTo(p.x-4,p.y-p.h/2);ctx.lineTo(p.x+4,p.y+p.h/2);ctx.moveTo(p.x+4,p.y-p.h/2);ctx.lineTo(p.x-4,p.y+p.h/2);ctx.stroke();
+        const hw=(p.w||8)/2;
+        ctx.beginPath();ctx.moveTo(p.x-hw,p.y-p.h/2);ctx.lineTo(p.x+hw,p.y+p.h/2);ctx.moveTo(p.x+hw,p.y-p.h/2);ctx.lineTo(p.x-hw,p.y+p.h/2);ctx.stroke();
       }
     }
     ctx.globalAlpha=1;
@@ -1908,28 +2541,41 @@ function draw(ctx,cw,ch){
   }
 
   // ══ NEW PADDLE ABILITY VFX ══
-  // Foresight (Oracle): show full predicted ball path
+  // Oracle active ability: strong projected path preview
   if(g.foresightT>0){
     const fa=Math.min(g.foresightT,1);
-    ctx.globalAlpha=fa*.25;ctx.strokeStyle='#44ddff';ctx.lineWidth=1.5;ctx.shadowColor='rgba(68,221,255,0.4)';ctx.shadowBlur=6;
+    let px=g.bx,py=g.by,vx=g.bvx,vy=g.bvy;
+    ctx.globalAlpha=.32*fa;ctx.strokeStyle='#44ddff';ctx.lineWidth=1.5;ctx.shadowColor='rgba(68,221,255,0.45)';ctx.shadowBlur=8;
     ctx.setLineDash([4,4]);
-    // Forward path
-    ctx.beginPath();
-    let fpx=g.bx,fpy=g.by,fvx=g.bvx,fvy=g.bvy;
-    ctx.moveTo(fpx,fpy);
-    for(let i=0;i<600;i++){fpx+=fvx*.005;fpy+=fvy*.005;
-      if(fpy<5){fpy=5;fvy=Math.abs(fvy);}if(fpy>GH-5){fpy=GH-5;fvy=-Math.abs(fvy);}
-      ctx.lineTo(fpx,fpy);if(fpx<0||fpx>GW)break;}
-    ctx.stroke();
-    // Impact marker
-    if(fpx>=0&&fpx<=GW){
-      ctx.beginPath();ctx.arc(fpx,fpy,8+Math.sin(g.t*6)*3,0,Math.PI*2);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(fpx-12,fpy);ctx.lineTo(fpx+12,fpy);ctx.moveTo(fpx,fpy-12);ctx.lineTo(fpx,fpy+12);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(px,py);
+    for(let i=0;i<650;i++){
+      px+=vx*.005;py+=vy*.005;
+      if(py<5){py=5;vy=Math.abs(vy);}if(py>GH-5){py=GH-5;vy=-Math.abs(vy);} 
+      ctx.lineTo(px,py);
+      if(px<0||px>GW)break;
     }
-    ctx.setLineDash([]);ctx.shadowBlur=0;ctx.globalAlpha=1;
-    // Floating eye icon near paddle
-    ctx.globalAlpha=fa*.6;ctx.fillStyle='#44ddff';ctx.font='14px "Share Tech Mono",monospace';ctx.textAlign='center';
-    ctx.fillText('\u{1F441}',g.px,g.py-g.ph/2-12);ctx.globalAlpha=1;
+    ctx.stroke();
+    ctx.setLineDash([]);ctx.shadowBlur=0;
+    ctx.globalAlpha=.9*fa;ctx.fillStyle='#9eeeff';ctx.font='bold 10px "Share Tech Mono",monospace';ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText('FUTURE FORESIGHT',GW/2,62);
+    ctx.globalAlpha=1;
+  }
+  // Oracle Sight (upgrade): lightweight projected path
+  if(g.oracleSight&&g.startPause<=0&&!(g.tsT>0)&&g.eAbilPhase!=='strike'){
+    const sp=Math.hypot(g.bvx,g.bvy);
+    if(sp>60){
+      let px=g.bx,py=g.by,vx=g.bvx,vy=g.bvy;
+      ctx.globalAlpha=.2;ctx.strokeStyle='#88dfff';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.moveTo(px,py);
+      for(let i=0;i<450;i++){
+        px+=vx*.005;py+=vy*.005;
+        if(py<5){py=5;vy=Math.abs(vy);}if(py>GH-5){py=GH-5;vy=-Math.abs(vy);} 
+        ctx.lineTo(px,py);
+        if(px<0||px>GW)break;
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);ctx.globalAlpha=1;
+    }
   }
   // Gravity well (Void) - visible swirling well
   if(g.gravWell&&g.gravWellT>0){const ga=Math.min(g.gravWellT,.5)*2;
@@ -2130,7 +2776,7 @@ function draw(ctx,cw,ch){
   ctx.fillStyle='#665';ctx.font='7.5px "Share Tech Mono",monospace';ctx.textAlign='center';ctx.textBaseline='alphabetic';
   const eL=g.cfg.enemy.id!=='basic'?' '+g.cfg.enemy.tag+g.cfg.enemy.name:'';
   const eAL=g.eAbil.id!=='none'?' ['+g.eAbil.name+']':'';
-  ctx.fillText('W'+g.cfg.wv+(g.cfg.boss?' BOSS':'')+eL+eAL,GW/2,GH-4);
+  if(g.cfg.enemy.id!=='thefool')ctx.fillText('W'+g.cfg.wv+(g.cfg.boss?' BOSS':'')+eL+eAL+(g.foolSidesSwapped?'  |  SWAPPED':''),GW/2,GH-4);
   const cdMax=g.pad.cd*(g.cdMul??1),rdy=g.abCD<=0,fill=rdy?1:1-g.abCD/cdMax;
   if(g.padId!=='classic'){
   ctx.fillStyle='#151515';ctx.fillRect(14,GH-32,100,3);if(rdy){ctx.shadowColor=col.g+'0.4)';ctx.shadowBlur=6;}
@@ -2139,53 +2785,98 @@ function draw(ctx,cw,ch){
   ctx.fillStyle=rdy?'#ccc':'#555';ctx.font='8px "Share Tech Mono",monospace';ctx.textAlign='left';if(g.padId!=='classic'){ctx.fillText('[Q] '+g.pad.abil+(rdy?' RDY':' '+g.abCD.toFixed(1)+'s'),14,GH-37);}
   if(g.combo>=3){ctx.fillStyle=col.g+(.4+.25*Math.sin(g.t*5))+')';ctx.font='10px "Share Tech Mono",monospace';ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText(g.combo+'x',GW-14,GH-6);}
 
-  // Active abilities indicator (right side)
-  const passives=[];
-  if(g.freeze)passives.push('FRZ');if(g.afterimage)passives.push('AFT');if(g.shockwave)passives.push('SHK');
-  if(g.homing)passives.push('HOM');if(g.timewarp)passives.push('TW');if(g.doppel)passives.push('DPL');
-  if(g.singularity)passives.push('SNG');if(g.transcend)passives.push('TRS');if(g.magnet)passives.push('MAG');
-  if(g.multicast)passives.push('2x');if(g.dblScore)passives.push('x2');if(g.vampire)passives.push('VMP');
-  if(g.aiCap)passives.push('\u2756AI-');if(g.triScore)passives.push('x3');if(g.echoHit)passives.push('ECO');if(g.voidWalk)passives.push('VWK');
-  if(g.stormCaller)passives.push('\u26A1SC');if(g.phantomStrike)passives.push('\u2606PS');if(g.mirrorMatch)passives.push('\u2194MR');if(g.berserker)passives.push('BRK'+(g.berserkerStacks||0));if(g.overcharge)passives.push('OVR');if(g.masterSkill)passives.push('\u2694MST');
-  if(passives.length>0){ctx.fillStyle='#776';ctx.font='7px "Share Tech Mono",monospace';ctx.textAlign='right';ctx.textBaseline='top';
-    passives.forEach((p,i)=>ctx.fillText(p,GW-10,8+i*10));}
+  // Corner cooldown/status overlays removed by request.
 
-  // Start-of-point direction indicator
+  // Start-of-point trajectory indicator (short directional arrow from ball)
   if(g.startPause>0&&!g.done){
-    const aDir=g.pendingDir||1;const pulse=.5+.5*Math.sin(g.t*10);
-    // Arrow body
-    ctx.save();ctx.translate(GW/2,GH/2);ctx.globalAlpha=.55*pulse;
+    const serveMax=Math.max(.001,g.startPauseMax||.42);
+    const serveT=clamp(1-(g.startPause/serveMax),0,1);
+    const ringR=18+(1-serveT)*16;
+    const ringA=.12+.24*(1-serveT);
+    ctx.save();
+    ctx.globalAlpha=ringA;
+    ctx.strokeStyle=col.p;
+    ctx.lineWidth=1.5;
+    ctx.shadowColor=col.g+'0.5)';ctx.shadowBlur=8;
+    ctx.beginPath();ctx.arc(g.bx,g.by,ringR,-Math.PI/2,-Math.PI/2+Math.PI*2*serveT);ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.restore();
+
+    const aDir=g.pendingDir||1;const pulse=.5+.5*Math.sin(g.t*8);
+    const spd=g.rallyBase*getRallyMul(g.rallyHits);
+    const pv=(typeof g.pendingVy==='number'?g.pendingVy:0);
+    const dx=aDir*spd,dy=pv;const len=Math.max(1,Math.hypot(dx,dy));
+    const ux=dx/len,uy=dy/len;
+    const arm=52+8*pulse;
+    const tx=g.bx+ux*arm,ty=g.by+uy*arm;
+    const ah=10+2*pulse;
+    ctx.save();ctx.globalAlpha=.72;
     ctx.strokeStyle=col.p;ctx.fillStyle=col.p;ctx.shadowColor=col.g+'0.6)';ctx.shadowBlur=14;ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(aDir*-36,0);ctx.lineTo(aDir*36,0);ctx.stroke();
-    // Arrowhead
-    ctx.beginPath();ctx.moveTo(aDir*36,0);ctx.lineTo(aDir*24,-9);ctx.lineTo(aDir*24,9);ctx.closePath();ctx.fill();
-    ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.restore();
-    // Direction label
-    ctx.fillStyle=col.g+(.4*pulse)+')';ctx.font='8px "Share Tech Mono",monospace';ctx.textAlign='center';ctx.textBaseline='top';
-    ctx.fillText((aDir>0?'SERVE →':'← SERVE'),GW/2,GH/2+20);
+    ctx.beginPath();ctx.moveTo(g.bx,g.by);ctx.lineTo(tx-ux*ah*.9,ty-uy*ah*.9);ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tx,ty);
+    ctx.lineTo(tx-ux*ah-uy*ah*.45,ty-uy*ah+ux*ah*.45);
+    ctx.lineTo(tx-ux*ah+uy*ah*.45,ty-uy*ah-ux*ah*.45);
+    ctx.closePath();ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.restore();
   }
 
   const sp=getSP(ctx);if(sp){ctx.fillStyle=sp;ctx.fillRect(0,0,GW,GH);}
-  if(Math.random()<.02){ctx.fillStyle='rgba(255,255,255,0.004)';ctx.fillRect(0,0,GW,GH);}
+  if(Math.random()<.008){ctx.fillStyle='rgba(255,255,255,0.003)';ctx.fillRect(0,0,GW,GH);}
 
-  // Floating score pop-ups
-  for(const pop of g.scorePops){
-    const alpha=pop.life>.3?1:pop.life/.3;
-    const scale=1+(.8-pop.life)*.6;
-    ctx.globalAlpha=alpha;
-    ctx.fillStyle='#fff';
-    ctx.shadowColor=col.g+'0.8)';
-    ctx.shadowBlur=12;
-    ctx.font=`bold ${Math.round(16*scale)}px "Share Tech Mono",monospace`;
-    ctx.textAlign='center';
-    ctx.textBaseline='middle';
-    ctx.fillText(pop.text,pop.x,pop.y);
-    ctx.shadowBlur=0;
+  // Floating score pop-ups (suppressed while major text overlays are active)
+  if(!majorTextBusy&&!g.wStormActive){
+    for(const pop of g.scorePops){
+      const lifeMax=Math.max(.001,pop.max||.8);
+      const lifeT=clamp(pop.life/lifeMax,0,1);
+      const alpha=lifeT>.35?1:lifeT/.35;
+      const scale=(pop.scale||1)+(1-lifeT)*.08;
+      ctx.globalAlpha=alpha;
+      ctx.fillStyle='#fff';
+      ctx.shadowColor=col.g+'0.8)';
+      ctx.shadowBlur=12;
+      ctx.font=`bold ${Math.round(16*scale)}px "Share Tech Mono",monospace`;
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText(pop.text,pop.x,pop.y);
+      ctx.shadowBlur=0;
+    }
   }
   ctx.globalAlpha=1;
 
   // Done
-  if(g.done){const da=Math.min(g.doneT*3.5,1);ctx.fillStyle=`rgba(0,0,0,${da*.9})`;ctx.fillRect(0,0,GW,GH);ctx.textAlign='center';ctx.textBaseline='middle';const ts=.75+easeOut(Math.min(g.doneT*4,1))*.25;ctx.save();ctx.translate(GW/2,GH/2-20);ctx.scale(ts,ts);ctx.shadowColor=col.g+'0.5)';ctx.shadowBlur=30*da;ctx.fillStyle=`rgba(255,255,255,${da})`;ctx.font='bold 60px "Share Tech Mono",monospace';if(g.result==='win')ctx.fillText('CLEAR',0,0);else{ctx.fillText(g.lives>0?'FAULT':'GAME OVER',0,0);if(g.lives>0){ctx.shadowBlur=4;ctx.fillStyle=`rgba(200,180,160,${da})`;ctx.font='12px "Share Tech Mono",monospace';ctx.fillText(g.lives+' '+(g.lives===1?'LIFE':'LIVES'),0,36);}}ctx.restore();if(g.doneT>.4){const pa=Math.min((g.doneT-.4)*3,1);ctx.shadowBlur=3;ctx.fillStyle=`rgba(180,170,150,${pa})`;ctx.font='10px "Share Tech Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('ENTER / CLICK',GW/2,GH/2+48);}ctx.shadowBlur=0;if(sp){ctx.fillStyle=sp;ctx.fillRect(0,0,GW,GH);}}
+  if(g.done){const da=Math.min(g.doneT*3.5,1);ctx.fillStyle=`rgba(0,0,0,${da*.9})`;ctx.fillRect(0,0,GW,GH);ctx.textAlign='center';ctx.textBaseline='middle';const ts=.75+easeOut(Math.min(g.doneT*4,1))*.25;ctx.save();ctx.translate(GW/2,GH/2-20);ctx.scale(ts,ts);ctx.shadowColor=col.g+'0.5)';ctx.shadowBlur=30*da;ctx.fillStyle=`rgba(255,255,255,${da})`;ctx.font='bold 60px "Share Tech Mono",monospace';if(g.result==='win')ctx.fillText('CLEAR',0,0);else{ctx.fillText(g.lives>0?'FAULT':'GAME OVER',0,0);if(g.lives>0){ctx.shadowBlur=4;ctx.fillStyle=`rgba(200,180,160,${da})`;ctx.font='12px "Share Tech Mono",monospace';ctx.fillText(g.lives+' '+(g.lives===1?'LIFE':'LIVES'),0,36);}if(g.cfg.enemy.id==='thefool'&&g.foolLoseLine){ctx.shadowBlur=10;ctx.fillStyle=`rgba(215,215,235,${da})`;ctx.font='10px "Share Tech Mono",monospace';ctx.fillText('“'+g.foolLoseLine+'”',0,58);}}ctx.restore();if(g.doneT>.4){const pa=Math.min((g.doneT-.4)*3,1);ctx.shadowBlur=3;ctx.fillStyle=`rgba(180,170,150,${pa})`;ctx.font='10px "Share Tech Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('ENTER / CLICK',GW/2,GH/2+48);}ctx.shadowBlur=0;if(sp){ctx.fillStyle=sp;ctx.fillRect(0,0,GW,GH);}}
+  if(showFoolLine){
+    const ta=Math.max(0,Math.min(1,g.foolLineT/Math.max(.001,g.foolLineMax||1)));
+    const specBusy=g.foolSpecT>0&&g.foolSpecTextT>0;
+    const swapBusy=g.foolSwapT>0;
+    const lineY=swapBusy?GH*.55:(specBusy?GH*.48:GH*.38);
+    ctx.globalAlpha=.75*Math.min(1,ta*2);
+    ctx.fillStyle='rgba(215,215,235,0.92)';
+    ctx.font='bold 13px "Times New Roman",serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(170,170,210,0.55)';ctx.shadowBlur=8;
+    drawSmokeTextAura(ctx,GW/2,lineY,g.t+1.4,.95);
+    const floatSay=(g.foolLine||'').slice(0,Math.floor(g.foolLineShow||0));
+    ctx.fillText(floatSay,GW/2,lineY,GW*.72);
+    ctx.shadowBlur=0;ctx.globalAlpha=1;
+  }
+  if(showFoolDialogBlocking){
+    const fade=Math.max(0,Math.min(1,g.foolDialogFade||0));
+    const pulse=.55+.45*Math.sin((g.foolDialogPulse||0)*3.2);
+    const y=GH*.68;
+    ctx.globalAlpha=.78*fade;
+    drawSmokeTextAura(ctx,GW/2,y,g.t+2.2,1.3);
+    ctx.fillStyle='rgba(224,224,246,0.94)';ctx.font='italic 16px "Times New Roman",serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(190,190,230,0.55)';ctx.shadowBlur=12;
+    const blockSay=(g.foolDialogLine||'').slice(0,Math.floor(g.foolDialogShow||0));
+    ctx.fillText(blockSay,GW/2,y,GW*.8);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(180,180,215,'+(0.22+0.38*pulse)*fade+')';ctx.font='8px "Times New Roman",serif';
+    ctx.fillText('ENTER / CLICK',GW/2,y+28);
+    ctx.globalAlpha=1;
+  }
   ctx.restore();
 }
 
@@ -2196,12 +2887,43 @@ function showScreen(id){['menu-screen','cards-screen','opp-screen','go-screen','
 function startWave(pid,wn){g=newGame(pid,wn,savedState,enemyUps,chosenOppCfg);chosenOppCfg=null;padId=pid;showScreen(null);if(g.cfg.boss)setTimeout(SFX.boss,80);}
 
 function doAbility(){
-  if(!g||g.done||g.abCD>0)return;const cd=g.pad.cd*g.cdMul,col=PCOL[g.padId];
+  if(!g||g.done||g.abCD>0||(g.foolDialogActive&&g.foolDialogBlocking))return;const cd=g.pad.cd*g.cdMul,col=PCOL[g.padId];
   if(g.padId==='classic')return; // Standard has no ability
   const cast=()=>{switch(g.padId){
-    case'oracle':g.foresightT=8;g.abCD=cd;SFX.abil();tone(800,.06,'sine',.04);tone(1200,.1,'sine',.03,40);g.abilFlash=.4;addSparks(g,g.px,g.py,12,100,[.27,.87,1]);break;
+    case'oracle':{
+      g.foresightT=2.6;
+      g.abCD=cd;SFX.abil();tone(860,.08,'sine',.045);tone(1120,.11,'sine',.03,40);
+      g.abilFlash=.4;g.shake=.05;g.flash=.12;g.flashCol=[.27,.87,1];
+      addSparks(g,g.bx,g.by,12,90,[.27,.87,1]);
+      break;
+    }
+    case'paradox':{
+      const prevX=g.bx,prevY=g.by;
+      const curSpd=Math.max(Math.hypot(g.bvx,g.bvy),g.ballSpd*1.14);
+      const headingAng=Math.atan2(g.bvy||0,g.bvx||1);
+      const backAng=headingAng+Math.PI;
+      const snapMin=110;
+      const snapMax=250;
+      const rewindDist=rng(snapMin,snapMax);
+      const snapX=clamp(g.bx+Math.cos(backAng)*rewindDist,60,GW-60);
+      const snapY=clamp(g.by+rng(-110,110),24,GH-24);
+      g.bx=snapX;
+      g.by=snapY;
+      const offsetDeg=rng(60,180)*(Math.random()<.5?-1:1);
+      const relaunchAng=backAng+(offsetDeg*Math.PI/180);
+      g.bvx=Math.cos(relaunchAng)*curSpd;
+      g.bvy=Math.sin(relaunchAng)*curSpd;
+      if(Math.abs(g.bvx)<curSpd*.35)g.bvx=(g.bvx<0?-1:1)*curSpd*.35;
+      g.bvx*=1.02;
+      g.bvy=clamp(g.bvy+rng(-45,45),-curSpd*.95,curSpd*.95);
+      g.abCD=cd;SFX.abil();tone(720,.08,'sine',.05);tone(1040,.1,'square',.045,24);tone(1280,.07,'sine',.035,64);
+      g.abilFlash=.56;g.shake=.14;g.flash=.24;g.flashCol=[.78,.7,1];
+      addSparks(g,prevX,prevY,12,95,[.78,.7,1]);
+      addSparks(g,g.bx,g.by,22,145,[.78,.7,1]);
+      break;
+    }
     case'inferno':g.phaseNext=true;g.phaseT=3.5;g.abCD=cd;SFX.abil();tone(600,.06,'sine',.04);tone(900,.08,'sine',.03,20);g.abilFlash=.35;g.shake=.06;g.flash=.15;g.flashCol=[.8,.53,1];addSparks(g,g.px+PAD_W,g.py,14,100,[.8,.53,1]);break;
-    case'frost':g.blizzardT=1.8;g.abCD=cd;SFX.abil();tone(1200,.08,'sine',.04);tone(800,.12,'sine',.03,30);tone(400,.18,'sine',.02,80);g.abilFlash=.5;addSparks(g,GW/2,GH/2,30,240,[.53,.8,1]);g.shake=.14;g.flash=.25;g.flashCol=[.53,.8,1];break;
+    case'frost':g.blizzardT=2.3;g.freezeT=Math.max(g.freezeT,.45);g.abCD=cd;SFX.abil();tone(1200,.08,'sine',.04);tone(800,.12,'sine',.03,30);tone(400,.18,'sine',.02,80);g.abilFlash=.5;addSparks(g,GW/2,GH/2,30,240,[.53,.8,1]);g.shake=.14;g.flash=.25;g.flashCol=[.53,.8,1];break;
     case'storm':g.thunderNext=true;g.abCD=cd;SFX.abil();tone(100,.1,'sawtooth',.05);tone(200,.08,'square',.04,40);g.abilFlash=.35;g.shake=.08;addSparks(g,g.px,g.py,12,120,[1,.93,.27]);break;
     case'voidp': {
       // Place gravity well ahead of ball in its path
@@ -2304,7 +3026,7 @@ function generateOpponents(wv){
   if(normRankIdx>=5){ // A rank index=5
     nAiSpd=260+wv*30+(normBoss?80:0);nReact=clamp(.25+wv*.07+(normBoss ? .15 : 0),0,.96);
   }else{
-    nAiSpd=260+wv*22+(normBoss?50:0);nReact=clamp(.06+wv*.025+(normBoss ? .06 : 0),0,.4);
+    nAiSpd=165+wv*12+(normBoss?24:0);nReact=clamp(.02+wv*.013+(normBoss ? .03 : 0),0,.22);
   }
   const nEH=BASE_PAD_H;
   const normCfg={wv,boss:normBoss,diff:normDiff,aiSpd:nAiSpd,aiReact:nReact,eH:nEH,enemy:normEnemy,trickAng:false,ghost:false,chaos:false,jitter:false};
@@ -2321,7 +3043,7 @@ function generateOpponents(wv){
   if(hardRank>=5){ // A rank+
     hAiSpd=280+wv*35+(hardBoss?100:0);hReact=clamp(.3+wv*.08+(hardBoss ? .2 : 0),0,.97);
   }else{
-    hAiSpd=270+wv*25+(hardBoss?60:0);hReact=clamp(.08+wv*.03+(hardBoss ? .08 : 0),0,.45);
+    hAiSpd=185+wv*14+(hardBoss?30:0);hReact=clamp(.03+wv*.015+(hardBoss ? .035 : 0),0,.25);
   }
   const hEH=BASE_PAD_H;
   const hardCfg={wv,boss:hardBoss,diff:hardDiff,aiSpd:hAiSpd,aiReact:hReact,eH:hEH,enemy:hardEnemy,trickAng:false,ghost:false,chaos:false,jitter:false};
@@ -2401,9 +3123,9 @@ function showOpponentSelect(){
 function showVictory(){const c=PCOL[padId];$('vic-title').style.textShadow=`0 0 30px ${c.g}0.3), 0 0 60px ${c.g}0.1)`;$('vic-info').textContent=`${PADDLES.find(p=>p.id===padId)?.name} \u00B7 COMPLETE`;showScreen('vic-screen');}
 
 // ═══ INPUT ═══
-window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();keysDown[k]=true;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();if(k==='q')doAbility();if(e.key==='Enter')handleContinue();});
+window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();keysDown[k]=true;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();if(k==='q')doAbility();if(e.key==='Enter'){if(!advanceFoolDialogue())handleContinue();}});
 window.addEventListener('keyup',e=>{keysDown[e.key.toLowerCase()]=false;});
-$('cv').addEventListener('click',()=>handleContinue());
+$('cv').addEventListener('click',()=>{if(!advanceFoolDialogue())handleContinue();});
 $('go-retry').onclick=()=>{savedState=null;wave=1;enemyUps=[];chosenOppCfg=null;SFX.sel();showOpponentSelect();};
 $('go-menu').onclick=()=>{savedState=null;wave=1;enemyUps=[];chosenOppCfg=null;showScreen('menu-screen');};
 $('vic-again').onclick=()=>{savedState=null;wave=1;enemyUps=[];chosenOppCfg=null;showScreen('menu-screen');};
@@ -2411,6 +3133,8 @@ $('vic-again').onclick=()=>{savedState=null;wave=1;enemyUps=[];chosenOppCfg=null
 // ═══ DEV MODE ═══
 let devPad='classic',devEnemy='basic',devBoss=false,devWave=6;
 let devAbilityIds=new Set();
+let devPadScrollTop=0;
+let devEnemyScrollTop=0;
 let devAbilityScrollTop=0;
 let devScreenScrollTop=0;
 
@@ -2419,17 +3143,24 @@ function getDevAbilityCards(){
 }
 
 function buildDevAbilityState(){
-  const pad=PADDLES.find(p=>p.id===devPad)||PADDLES[0];
+  const pad=PADDLES.find(p=>p.id===devPad)||{id:'dev_perfect',hMul:1.2};
   const state={
     bs:BASE_SPD,ph:BASE_PAD_H*pad.hMul,pSpd:480,cdMul:1,lives:3,shields:0,aiMod:1,horizMul:1,
-    edge:false,rico:false,magnet:false,dblScore:false,vampire:false,
+    edge:false,rico:false,magnet:false,dblScore:false,vampire:false,oracleSight:false,
     freeze:false,afterimage:false,shockwave:false,
     homing:false,timewarp:false,multicast:false,
     transcend:false,doppel:false,singularity:false,
     aiCap:false,triScore:false,echoHit:false,voidWalk:false,
     stormCaller:false,phantomStrike:false,mirrorMatch:false,
     berserker:false,overcharge:false,masterSkill:false,siphon:false,
+    perfectPilot:false,
   };
+  if(devPad==='dev_perfect'){
+    state.perfectPilot=true;
+    state.pSpd=1600;
+    state.ph=BASE_PAD_H*1.25;
+    state.horizMul=2;
+  }
   const cards=getDevAbilityCards().filter(c=>devAbilityIds.has(c.id));
   const master=cards.find(c=>c.id==='sec_master');
   const ordered=master?[...cards.filter(c=>c.id!=='sec_master'),master]:cards;
@@ -2440,64 +3171,105 @@ function buildDevAbilityState(){
 function showDevScreen(){
   const devScreenEl=$('dev-screen');
   if(curScreen==='dev-screen'&&devScreenEl)devScreenScrollTop=devScreenEl.scrollTop;
+  const oldPadList=$('dev-pad-list');if(oldPadList)devPadScrollTop=oldPadList.scrollTop;
+  const oldEnemyList=$('dev-enemy-list');if(oldEnemyList)devEnemyScrollTop=oldEnemyList.scrollTop;
   // Build paddle selector
-  const pg=$('dev-pad-grid');pg.innerHTML='';
-  PADDLES.forEach(p=>{
+  const pg=$('dev-pad-grid');
+  pg.innerHTML='<div id="dev-pad-list" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow:auto;padding-right:4px;"></div>';
+  const padList=pg.querySelector('#dev-pad-list');
+  const devPaddles=[...PADDLES,{id:'dev_perfect',name:'PLAYTEST AI',hMul:1.25,abil:'PERFECT TRACK',ainfo:'Dev-only auto-catch paddle'}];
+  devPaddles.forEach(p=>{
     const c=PCOL[p.id];
+    const pc=c||{p:'#d8d2ff'};
     const d=document.createElement('div');
-    d.style.cssText=`padding:8px 12px;cursor:pointer;border:1px solid ${devPad===p.id?c.p:'#1a1a1a'};border-radius:3px;background:${devPad===p.id?'rgba(255,255,255,0.04)':'#050508'};display:flex;align-items:center;gap:10px;transition:all 0.15s;`;
-    d.innerHTML=`<div style="width:6px;height:6px;border-radius:50%;background:${c.p};box-shadow:0 0 6px ${c.p};flex-shrink:0;"></div><div><div style="font-size:10px;font-weight:700;letter-spacing:3px;color:${devPad===p.id?c.p:'#aaa'}">${p.name}</div><div style="font-size:7px;color:#776;letter-spacing:2px;margin-top:2px;">[Q] ${p.abil} - ${p.ainfo}</div></div>`;
+    d.style.cssText=`padding:12px 14px;cursor:pointer;border:1px solid ${devPad===p.id?pc.p:'#3a3a46'};border-radius:4px;background:${devPad===p.id?'rgba(255,255,255,0.06)':'#050508'};display:flex;align-items:center;gap:12px;transition:all 0.15s;box-shadow:${devPad===p.id?`0 0 0 1px ${pc.p}66`:'0 0 0 1px rgba(255,255,255,0.03) inset'};`;
+    d.innerHTML=`<div style="width:8px;height:8px;border-radius:50%;background:${pc.p};box-shadow:0 0 10px ${pc.p};flex-shrink:0;"></div><div><div style="font-size:11px;font-weight:700;letter-spacing:3px;color:${devPad===p.id?pc.p:'#bbb'}">${p.name}</div><div style="font-size:8px;color:#887;letter-spacing:2px;margin-top:3px;">[Q] ${p.abil}</div><div style="font-size:7px;color:#666;letter-spacing:1.4px;margin-top:2px;">${p.ainfo}</div></div>`;
     d.onclick=()=>{devPad=p.id;SFX.sel();showDevScreen();};
-    d.onmouseenter=()=>{if(devPad!==p.id)d.style.borderColor='#333';};
-    d.onmouseleave=()=>{if(devPad!==p.id)d.style.borderColor='#1a1a1a';};
-    pg.appendChild(d);
+    d.onmouseenter=()=>{if(devPad!==p.id){d.style.borderColor='#5a5a70';d.style.boxShadow='0 0 0 1px rgba(150,150,190,0.22)';}};
+    d.onmouseleave=()=>{if(devPad!==p.id){d.style.borderColor='#3a3a46';d.style.boxShadow='0 0 0 1px rgba(255,255,255,0.03) inset';}};
+    padList.appendChild(d);
   });
-  // Build enemy selector
-  const eg=$('dev-enemy-grid');eg.innerHTML='';
+  // Build ability selector (second section)
+  const eg=$('dev-enemy-grid');
+  eg.innerHTML='';
+  const abWrap=document.createElement('div');
+  abWrap.style.cssText='padding:10px 12px;border:1px solid #40404f;border-radius:4px;background:#050508;box-shadow:0 0 0 1px rgba(255,255,255,0.06) inset;';
+  const cards=getDevAbilityCards();
+  const count=devAbilityIds.size;
+  abWrap.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="font-size:10px;font-weight:700;letter-spacing:3px;color:#999;">ABILITIES (${count})</div><div id="dev-abil-clear" style="font-size:8px;letter-spacing:2px;color:#a66;cursor:pointer;">CLEAR</div></div><div id="dev-abil-list" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:auto;padding-right:4px;"></div>`;
+  eg.appendChild(abWrap);
+
+  const abList=abWrap.querySelector('#dev-abil-list');
+  const cardsSorted=[...cards].sort((a,b)=>{
+    const ai=TIER_ORDER.indexOf(a.tier),bi=TIER_ORDER.indexOf(b.tier);
+    if(ai!==bi)return ai-bi;
+    return a.name.localeCompare(b.name);
+  });
+  let lastTier='';
+  cardsSorted.forEach(c=>{
+    if(c.tier!==lastTier){
+      lastTier=c.tier;
+      const tc2=TIER_COLORS[c.tier]||'#888';
+      const th=document.createElement('div');
+      th.style.cssText=`margin-top:8px;padding:8px 8px 3px;border-top:1px solid rgba(120,120,140,0.3);font-size:11px;font-weight:900;letter-spacing:4px;text-align:left;color:${tc2};text-shadow:0 0 10px rgba(${TIER_GLOW[c.tier]||'140,140,140'},0.45);`;
+      th.textContent=(TIER_ICON[c.tier]||'◇')+' '+(TIER_NAMES[c.tier]||c.tier.toUpperCase());
+      abList.appendChild(th);
+    }
+    const sel=devAbilityIds.has(c.id);
+    const tc=TIER_COLORS[c.tier]||'#aaa';
+    const row=document.createElement('div');
+    row.style.cssText=`padding:9px 10px;cursor:pointer;border:1px solid ${sel?tc:'#3a3a46'};border-radius:4px;background:${sel?'rgba(255,255,255,0.06)':'#050508'};display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:${sel?`0 0 0 1px ${tc}66`:'0 0 0 1px rgba(255,255,255,0.03) inset'};`;
+    row.innerHTML=`<div style="display:flex;flex-direction:column;align-items:flex-start;"><div style="font-size:9px;letter-spacing:2px;color:${sel?'#ddd':'#888'};">${c.name}</div><div style="font-size:7px;letter-spacing:1px;color:${sel?'#998':'#666'};">${c.desc}</div></div><div style="font-size:12px;color:${tc};">${sel?'●':'○'}</div>`;
+    row.onclick=()=>{devAbilityScrollTop=abList.scrollTop;devScreenScrollTop=devScreenEl?devScreenEl.scrollTop:devScreenScrollTop;if(sel)devAbilityIds.delete(c.id);else devAbilityIds.add(c.id);SFX.sel();showDevScreen();};
+    abList.appendChild(row);
+  });
+
+  // Third section: enemies + stage/wave sector
+  const opts=$('dev-opts');opts.innerHTML='';
+  const enemyWrap=document.createElement('div');
+  enemyWrap.style.cssText='padding:10px 12px;border:1px solid #40404f;border-radius:4px;background:#050508;box-shadow:0 0 0 1px rgba(255,255,255,0.06) inset;';
+  enemyWrap.innerHTML='<div id="dev-enemy-list" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;padding-right:4px;"></div>';
+  opts.appendChild(enemyWrap);
+  const enemyList=enemyWrap.querySelector('#dev-enemy-list');
+  let lastDiff='';
   ENEMIES.forEach(e=>{
+    if(e.diff!==lastDiff){
+      lastDiff=e.diff;
+      const head=document.createElement('div');
+      const hc=DIFF_COLORS[e.diff]||'#999';
+      head.style.cssText=`margin-top:8px;padding:8px 8px 3px;border-top:1px solid rgba(120,120,140,0.3);color:${hc};font-size:12px;font-weight:900;letter-spacing:5px;text-align:left;`;
+      head.textContent='TIER '+e.diff;
+      enemyList.appendChild(head);
+    }
     const dc=DIFF_COLORS[e.diff]||'#fff';
     const eab=getEnemyAbil(e.id);
     const sel=devEnemy===e.id;
     const d=document.createElement('div');
-    d.style.cssText=`padding:6px 10px;cursor:pointer;border:1px solid ${sel?dc:'#1a1a1a'};border-radius:3px;background:${sel?'rgba(255,255,255,0.03)':'#050508'};display:flex;align-items:center;gap:8px;transition:all 0.15s;`;
-    d.innerHTML=`<div style="font-size:9px;font-weight:900;color:${dc};width:28px;text-align:center;letter-spacing:1px;">${e.diff}</div><div style="flex:1;"><div style="font-size:9px;font-weight:700;letter-spacing:2px;color:${sel?'#eee':'#999'}">${e.name} <span style="color:#665;font-size:7px;">${e.tag}</span></div>${eab.id!=='none'?`<div style="font-size:6.5px;color:#a66;letter-spacing:1.5px;margin-top:1px;">${eab.icon} ${eab.name}</div>`:''}</div>`;
+    const auraBorder=e.id==='thefool'?'#e6dcff':dc;
+    const auraGlow=e.id==='thefool'?'rgba(230,220,255,0.35)':'rgba(255,255,255,0.03)';
+    d.style.cssText=`padding:10px 12px;cursor:pointer;border:1px solid ${sel?auraBorder:'#3a3a46'};border-radius:4px;background:${sel?auraGlow:'#050508'};display:flex;align-items:center;gap:10px;transition:all 0.15s;box-shadow:${sel?`0 0 0 1px ${auraBorder}66`:'0 0 0 1px rgba(255,255,255,0.03) inset'};`;
+    d.innerHTML=`<div style="font-size:10px;font-weight:900;color:${dc};width:52px;text-align:center;letter-spacing:1px;">${e.diff}</div><div style="flex:1;"><div style="font-size:10px;font-weight:700;letter-spacing:2px;color:${sel?'#eee':'#999'}">${e.name} <span style="color:#665;font-size:7px;">${e.tag}</span></div>${eab.id!=='none'?`<div style="font-size:7px;color:#a66;letter-spacing:1.5px;margin-top:2px;">${eab.icon} ${eab.name}</div>`:''}</div>`;
     d.onclick=()=>{devEnemy=e.id;SFX.sel();showDevScreen();};
-    d.onmouseenter=()=>{if(!sel)d.style.borderColor='#333';};
-    d.onmouseleave=()=>{if(!sel)d.style.borderColor='#1a1a1a';};
-    eg.appendChild(d);
+    d.onmouseenter=()=>{if(!sel){d.style.borderColor='#5a5a70';d.style.boxShadow='0 0 0 1px rgba(150,150,190,0.22)';}};
+    d.onmouseleave=()=>{if(!sel){d.style.borderColor='#3a3a46';d.style.boxShadow='0 0 0 1px rgba(255,255,255,0.03) inset';}};
+    enemyList.appendChild(d);
   });
-  // Options
-  const opts=$('dev-opts');opts.innerHTML='';
+
+  const stageWrap=document.createElement('div');
+  stageWrap.style.cssText='padding:10px 12px;border:1px solid #40404f;border-radius:4px;background:#050508;margin-top:6px;box-shadow:0 0 0 1px rgba(255,255,255,0.06) inset;';
+  stageWrap.innerHTML='<div style="font-size:11px;font-weight:900;letter-spacing:4px;color:#999;margin-bottom:8px;">STAGE / WAVE</div>';
+  opts.appendChild(stageWrap);
   // Boss toggle
   const bossD=document.createElement('div');
-  bossD.style.cssText=`padding:8px 12px;cursor:pointer;border:1px solid ${devBoss?'#f66':'#1a1a1a'};border-radius:3px;background:${devBoss?'rgba(255,40,40,0.06)':'#050508'};transition:all 0.15s;`;
+  bossD.style.cssText=`padding:8px 12px;cursor:pointer;border:1px solid ${devBoss?'#f66':'#3a3a46'};border-radius:3px;background:${devBoss?'rgba(255,40,40,0.06)':'#050508'};transition:all 0.15s;box-shadow:${devBoss?'0 0 0 1px rgba(255,110,110,0.35)':'0 0 0 1px rgba(255,255,255,0.03) inset'};`;
   bossD.innerHTML=`<div style="font-size:9px;font-weight:700;letter-spacing:3px;color:${devBoss?'#f66':'#666'};">\u2605 BOSS MODE: ${devBoss?'ON':'OFF'}</div>`;
   bossD.onclick=()=>{devBoss=!devBoss;SFX.sel();showDevScreen();};
-  opts.appendChild(bossD);
+  stageWrap.appendChild(bossD);
   // Wave slider
   const wvD=document.createElement('div');
-  wvD.style.cssText='padding:8px 12px;border:1px solid #1a1a1a;border-radius:3px;background:#050508;';
+  wvD.style.cssText='padding:8px 12px;border:1px solid #3a3a46;border-radius:3px;background:#050508;margin-top:6px;box-shadow:0 0 0 1px rgba(255,255,255,0.03) inset;';
   wvD.innerHTML=`<div style="font-size:9px;font-weight:700;letter-spacing:3px;color:#999;margin-bottom:6px;">WAVE LEVEL: ${devWave}</div><input type="range" min="1" max="12" value="${devWave}" style="width:100%;accent-color:#f66;" id="dev-wave-slider">`;
-  opts.appendChild(wvD);
-
-  // Ability selector
-  const abWrap=document.createElement('div');
-  abWrap.style.cssText='padding:8px 12px;border:1px solid #1a1a1a;border-radius:3px;background:#050508;';
-  const cards=getDevAbilityCards();
-  const count=devAbilityIds.size;
-  abWrap.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div style="font-size:9px;font-weight:700;letter-spacing:3px;color:#999;">ABILITIES (${count})</div><div id="dev-abil-clear" style="font-size:7px;letter-spacing:2px;color:#a66;cursor:pointer;">CLEAR</div></div><div id="dev-abil-list" style="display:flex;flex-direction:column;gap:4px;max-height:250px;overflow:auto;"></div>`;
-  opts.appendChild(abWrap);
-
-  const abList=abWrap.querySelector('#dev-abil-list');
-  cards.forEach(c=>{
-    const sel=devAbilityIds.has(c.id);
-    const tc=TIER_COLORS[c.tier]||'#aaa';
-    const row=document.createElement('div');
-    row.style.cssText=`padding:6px 8px;cursor:pointer;border:1px solid ${sel?tc:'#1a1a1a'};border-radius:3px;background:${sel?'rgba(255,255,255,0.04)':'#050508'};display:flex;justify-content:space-between;align-items:center;gap:8px;`;
-    row.innerHTML=`<div style="display:flex;flex-direction:column;align-items:flex-start;"><div style="font-size:8px;letter-spacing:2px;color:${sel?'#ddd':'#888'};">${c.name}</div><div style="font-size:6px;letter-spacing:1px;color:${sel?'#887':'#666'};">${TIER_NAMES[c.tier]}</div></div><div style="font-size:10px;color:${tc};">${sel?'●':'○'}</div>`;
-    row.onclick=()=>{devAbilityScrollTop=abList.scrollTop;devScreenScrollTop=devScreenEl?devScreenEl.scrollTop:devScreenScrollTop;if(sel)devAbilityIds.delete(c.id);else devAbilityIds.add(c.id);SFX.sel();showDevScreen();};
-    abList.appendChild(row);
-  });
+  stageWrap.appendChild(wvD);
 
   setTimeout(()=>{const sl=$('dev-wave-slider');if(sl)sl.oninput=e=>{devWave=parseInt(e.target.value);sl.parentElement.querySelector('div').textContent='WAVE LEVEL: '+devWave;};},0);
   setTimeout(()=>{const clr=$('dev-abil-clear');if(clr)clr.onclick=()=>{devAbilityScrollTop=0;devScreenScrollTop=devScreenEl?devScreenEl.scrollTop:devScreenScrollTop;devAbilityIds.clear();SFX.sel();showDevScreen();};},0);
@@ -2506,26 +3278,32 @@ function showDevScreen(){
   requestAnimationFrame(()=>{
     const listEl=$('dev-abil-list');
     const screenEl=$('dev-screen');
+    const padListEl=$('dev-pad-list');
+    const enemyListEl=$('dev-enemy-list');
     if(listEl)listEl.scrollTop=devAbilityScrollTop;
+    if(padListEl)padListEl.scrollTop=devPadScrollTop;
+    if(enemyListEl)enemyListEl.scrollTop=devEnemyScrollTop;
     if(screenEl)screenEl.scrollTop=devScreenScrollTop;
   });
 }
 
 function devLaunch(){
   const enemy=ENEMIES.find(e=>e.id===devEnemy)||ENEMIES[0];
+  const launchPadId=devPad==='dev_perfect'?'classic':devPad;
   const wv=devWave;const boss=devBoss;
   const rankIdx=Math.min(Math.floor(wv/1.5),DIFF_RANKS.length-1);
   const diff=boss?DIFF_RANKS[Math.min(rankIdx+1,DIFF_RANKS.length-1)]:enemy.diff;
-  const diffIdx=DIFF_RANKS.indexOf(diff);
+  const diffIdxRaw=DIFF_RANKS.indexOf(diff);
+  const diffIdx=diffIdxRaw>=0?diffIdxRaw:DIFF_RANKS.length-1;
   let aiSpd,aiReact;
   if(diffIdx>=5){aiSpd=220+wv*30+(boss?80:0);aiReact=clamp(.25+wv*.07+(boss ? .15 : 0),0,.97);}
-  else{aiSpd=220+wv*22+(boss?50:0);aiReact=clamp(.06+wv*.025+(boss ? .06 : 0),0,.4);}
+  else{aiSpd=165+wv*12+(boss?24:0);aiReact=clamp(.02+wv*.013+(boss ? .03 : 0),0,.22);}
   const eH=BASE_PAD_H;
   const cfg={wv,boss,diff,aiSpd,aiReact,eH,enemy,trickAng:false,ghost:false,chaos:false,jitter:false};
   enemy.mod(cfg);
   const devState=buildDevAbilityState();
-  savedState=null;wave=wv;enemyUps=[];chosenOppCfg=cfg;padId=devPad;
-  g=newGame(devPad,wv,devState,[],cfg);chosenOppCfg=null;showScreen(null);
+  savedState=null;wave=wv;enemyUps=[];chosenOppCfg=cfg;padId=launchPadId;
+  g=newGame(launchPadId,wv,devState,[],cfg);chosenOppCfg=null;showScreen(null);
   if(boss)setTimeout(SFX.boss,80);
 }
 
