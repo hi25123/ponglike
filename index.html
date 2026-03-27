@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PONG ROGUE</title>
+<title>PADDLEBORN</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,12 +13,12 @@
 
 <div id="menu-screen" class="screen">
   <div style="text-align:center;max-width:920px;padding:0 20px;">
-    <div style="margin-bottom:46px;"><div class="title">PONG</div><div class="subtitle">ROGUE</div></div>
+    <div style="margin-bottom:46px;"><div class="title">PADDLE</div><div class="subtitle">BORN</div></div>
     <div class="slabel">CHOOSE YOUR PADDLE</div>
     <div class="pad-grid" id="pad-grid"></div>
     <div class="dim" style="margin-top:36px;">W/S MOVE &middot; A/D SHIFT &middot; Q ABILITY &middot; FIRST TO 5 &middot; 12 WAVES &middot; ENEMY UPGRADES TOO</div>
     <div id="skip-tut-btn" style="margin-top:14px;cursor:pointer;color:#667;font-size:10px;letter-spacing:4px;transition:color 0.2s;" onmouseenter="this.style.color='#aab'" onmouseleave="this.style.color='#667'">SKIP TUTORIAL</div>
-    <div id="dev-btn" style="margin-top:20px;cursor:pointer;color:#e8e8e8;font-size:10px;letter-spacing:4px;transition:color 0.2s;" onmouseenter="this.style.color='#fff'" onmouseleave="this.style.color='#e8e8e8'" onclick="SFX.sel();showDevScreen();">&#9881; DEV MODE</div>
+    <div id="dev-btn" style="margin-top:28px;cursor:pointer;display:inline-block;padding:12px 28px;border:1px solid #555;border-radius:3px;color:#fff;font-size:13px;letter-spacing:5px;background:linear-gradient(175deg,#111,#080808);transition:all 0.22s ease;" onmouseenter="this.style.borderColor='#aaa';this.style.background='linear-gradient(175deg,#222,#111)';this.style.boxShadow='0 0 20px rgba(255,255,255,0.08)'" onmouseleave="this.style.borderColor='#555';this.style.background='linear-gradient(175deg,#111,#080808)';this.style.boxShadow='none'" onclick="SFX.sel();showDevScreen();">&#9881; SANDBOX MODE</div>
   </div>
 </div>
 
@@ -72,8 +72,8 @@
 
 <div id="dev-screen" class="screen hidden">
   <div class="dev-shell">
-    <div style="font-size:clamp(28px,5vw,42px);letter-spacing:12px;margin-bottom:4px;text-shadow:0 0 18px rgba(255,100,100,0.18);">DEV MODE</div>
-    <div style="color:#fff;font-size:10px;letter-spacing:5px;margin-bottom:16px;">TEST ANY PADDLE vs ANY ENEMY</div>
+    <div style="font-size:clamp(28px,5vw,42px);letter-spacing:12px;margin-bottom:4px;text-shadow:0 0 18px rgba(255,100,100,0.18);">SANDBOX MODE</div>
+    <div style="color:#fff;font-size:13px;letter-spacing:5px;margin-bottom:16px;">TEST ANY PADDLE vs ANY ENEMY</div>
     <div class="dev-columns">
       <div class="dev-col">
         <div class="dev-head">PADDLES</div>

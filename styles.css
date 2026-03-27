@@ -144,7 +144,7 @@ canvas {
 		0 0 30px var(--pc);
 }
 .pad-card .pn {
-	font-size: 14px;
+	font-size: 15px;
 	font-weight: 700;
 	letter-spacing: 3px;
 	margin-bottom: 8px;
@@ -157,7 +157,7 @@ canvas {
 }
 .pad-card .pd {
 	color: #f2f2f2;
-	font-size: 12px;
+	font-size: 13px;
 	line-height: 1.7;
 	margin-bottom: 10px;
 	min-height: 36px;
@@ -172,7 +172,7 @@ canvas {
 }
 .pad-card .pa {
 	color: #f1f1f1;
-	font-size: 11px;
+	font-size: 12px;
 	letter-spacing: 2px;
 	transition: color 0.2s;
 }
@@ -181,7 +181,7 @@ canvas {
 }
 .pad-card .pi {
 	color: #f3f3f3;
-	font-size: 11px;
+	font-size: 12px;
 	margin-top: 4px;
 }
 .pad-card .pt {
@@ -248,7 +248,7 @@ canvas {
 		0 0 40px var(--rc);
 }
 .up-card .cn {
-	font-size: 14px;
+	font-size: 15px;
 	font-weight: 700;
 	letter-spacing: 2px;
 	margin-bottom: 6px;
@@ -259,13 +259,13 @@ canvas {
 }
 .up-card .cd {
 	color: #ddd;
-	font-size: 11px;
-	line-height: 1.6;
+	font-size: 13px;
+	line-height: 1.7;
 	margin-bottom: 8px;
 	min-height: 16px;
 }
 .up-card .cr {
-	font-size: 10px;
+	font-size: 12px;
 	color: #fff;
 	letter-spacing: 3px;
 	font-weight: 700;
@@ -480,15 +480,15 @@ canvas {
 }
 .dim {
 	color: #fff;
-	font-size: 12px;
-	letter-spacing: 2px;
-	line-height: 2.2;
+	font-size: 14px;
+	letter-spacing: 3px;
+	line-height: 2.4;
 }
 .slabel {
 	color: #fff;
-	font-size: 14px;
+	font-size: 17px;
 	letter-spacing: 8px;
-	margin-bottom: 22px;
+	margin-bottom: 26px;
 	text-shadow: 0 0 12px rgba(255, 255, 255, 0.24);
 }
 
