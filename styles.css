@@ -60,6 +60,11 @@ canvas {
 	opacity: 0;
 	pointer-events: none;
 }
+.screen.hidden *,
+.screen.hidden *::before,
+.screen.hidden *::after {
+	pointer-events: none;
+}
 #pause-overlay.hidden {
 	display: none !important;
 }
