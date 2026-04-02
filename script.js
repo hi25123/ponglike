@@ -1,6 +1,6 @@
 /* Consolidated single-file runtime: game-data + audio + fool + main */
 
-// ═══ CONSTANTS ═══
+// --- CONSTANTS ---
 const GW = 800,
 	GH = 500,
 	BALL_SZ = 10,
@@ -13,7 +13,7 @@ const PX_HOME = 40,
 	MAX_WAVE = 12,
 	TRAIL = 24,
 	BASE_SPD = 340;
-const MAX_BALL_SPD = 99999;
+const MAX_BALL_SPD = 2200;
 // Visual/particle caps (raised to allow richer effects)
 const MAX_SPARKS = 350,
 	MAX_MULTI = 14,
@@ -95,7 +95,7 @@ function getRallyMul(hits) {
 	return 1 + extra;
 }
 
-// ═══ DIFFICULTY RATINGS ═══
+// --- DIFFICULTY RATINGS ---
 const DIFF_RANKS = ["F", "E", "D", "C", "B", "A", "S", "SS", "SSS"];
 const DIFF_COLORS = {
 	F: "#446644",
@@ -139,30 +139,30 @@ const DIFF_REWARD = {
 };
 // Which upgrade rarities are AVAILABLE at each difficulty
 const DIFF_TIERS = {
-	F: ["common"],
-	"F-": ["common"],
-	Ω: ["mythical", "secret", "klein"],
-	E: ["common", "uncommon"],
-	D: ["common", "uncommon"],
-	C: ["common", "uncommon", "rare"],
-	B: ["uncommon", "rare"],
-	A: ["uncommon", "rare", "epic"],
-	S: ["rare", "epic", "legendary"],
-	SS: ["epic", "legendary", "mythical"],
+	"F-": ["common", "uncommon"],
+	F: ["common", "uncommon"],
+	E: ["common", "uncommon", "rare"],
+	D: ["uncommon", "rare"],
+	C: ["uncommon", "rare", "epic"],
+	B: ["rare", "epic"],
+	A: ["rare", "epic", "legendary"],
+	S: ["epic", "legendary", "mythical"],
+	SS: ["legendary", "mythical", "secret"],
 	SSS: ["legendary", "mythical", "secret", "klein"],
+	Ω: ["mythical", "secret", "klein"],
 };
 const DIFF_BALL_MUL = {
-	"F-": 1.0,
-	F: 1.04,
-	E: 1.1,
-	D: 1.18,
-	C: 1.28,
-	B: 1.38,
-	A: 1.52,
-	S: 1.68,
-	SS: 1.84,
-	SSS: 2.0,
-	Ω: 2.16,
+	"F-": 1.18,
+	F: 1.24,
+	E: 1.32,
+	D: 1.42,
+	C: 1.54,
+	B: 1.62,
+	A: 1.78,
+	S: 1.92,
+	SS: 2.08,
+	SSS: 2.22,
+	Ω: 2.38,
 };
 const BASE_BALL_SPEED_CAP = 760;
 const FOOL_SEQUENCES = [
@@ -539,7 +539,7 @@ const TIER_ORDER = [
 	"klein",
 ];
 
-// ═══ PALETTES ═══
+// --- PALETTES ---
 const PCOL = {
 	classic: { p: "#ffffff", g: "rgba(255,255,255,", t: [1, 1, 1] },
 	oracle: { p: "#44ddff", g: "rgba(68,221,255,", t: [0.27, 0.87, 1] },
@@ -550,7 +550,7 @@ const PCOL = {
 	voidp: { p: "#ff44aa", g: "rgba(255,68,170,", t: [1, 0.27, 0.67] },
 };
 
-// ═══ PADDLES ═══
+// --- PADDLES ---
 const PADDLES = [
 	{
 		id: "classic",
@@ -586,11 +586,11 @@ const PADDLES = [
 		id: "inferno",
 		name: "PHANTOM",
 		hMul: 0.95,
-		desc: "Phase strike. Your next paddle hit becomes a ghost pierce through enemy blocks.",
-		abil: "PHASE",
+		desc: "Shadow strike. Blinks the ball forward, skipping past blockers and puppets with a speed burst.",
+		abil: "SHADOW STRIKE",
 		akey: "Q",
-		ainfo: "Next hit ghost-pierces",
-		cd: 6,
+		ainfo: "Blink ball forward + speed burst",
+		cd: 7,
 	},
 	{
 		id: "frost",
@@ -606,47 +606,47 @@ const PADDLES = [
 		id: "storm",
 		name: "STORM",
 		hMul: 0.9,
-		desc: "Charge lightning. Next hit fires a bolt that stuns the enemy paddle.",
+		desc: "Fires a lightning bolt from your paddle that stuns the enemy.",
 		abil: "THUNDER",
 		akey: "Q",
-		ainfo: "Stun bolt on next hit",
-		cd: 6,
+		ainfo: "Fires stun bolt instantly",
+		cd: 5,
 	},
 	{
 		id: "voidp",
 		name: "VOID",
 		hMul: 1,
-		desc: "Drop a gravity well in the ball path. Warps trajectory.",
-		abil: "GRAVITY WELL",
+		desc: "Warps the ball's path, curving it hard toward enemy weak spots for 3 seconds.",
+		abil: "WARP FIELD",
 		akey: "Q",
-		ainfo: "Gravity well 3s",
-		cd: 6,
+		ainfo: "Ball curves toward gaps 3s",
+		cd: 7,
 	},
 ];
 
-// ═══ ENEMIES with difficulty ═══ (multiple per tier for variety)
+// --- ENEMIES with difficulty --- (multiple per tier for variety)
 const ENEMIES = [
-	// F-tier
-	{ id: "basic", name: "ROOKIE", tag: "", diff: "F", mod: (c) => { c.aiSpd *= 1.2; c.aiReact *= 0.6; } },
+	// F-tier (buffed: still easy but put up a real fight)
+	{ id: "basic", name: "ROOKIE", tag: "", diff: "F", mod: (c) => { c.aiSpd *= 1.4; c.aiReact *= 0.8; } },
 	{
 		id: "sleepy",
 		name: "DROWSY",
 		tag: "zz",
 		diff: "F",
 		mod: (c) => {
-			c.aiSpd *= 1.05;
-			c.aiReact *= 0.5;
+			c.aiSpd *= 1.25;
+			c.aiReact *= 0.7;
 		},
 	},
-	// E-tier
+	// E-tier (buffed slightly)
 	{
 		id: "wide",
 		name: "WALL",
 		tag: "=",
 		diff: "E",
 		mod: (c) => {
-			c.aiSpd *= 1.1;
-			c.aiReact *= 0.65;
+			c.aiSpd *= 1.2;
+			c.aiReact *= 0.75;
 		},
 	},
 	{
@@ -655,11 +655,11 @@ const ENEMIES = [
 		tag: "[]",
 		diff: "E",
 		mod: (c) => {
-			c.aiSpd *= 1.0;
-			c.aiReact *= 0.6;
+			c.aiSpd *= 1.15;
+			c.aiReact *= 0.7;
 		},
 	},
-	// D-tier
+	// D-tier (now includes Clown and Marionettist for early variety)
 	{
 		id: "fast",
 		name: "SPEEDSTER",
@@ -681,7 +681,27 @@ const ENEMIES = [
 			c.jitter = true;
 		},
 	},
-	// C-tier
+	{
+		id: "clown",
+		name: "CLOWN",
+		tag: "JOKE",
+		diff: "D",
+		mod: (c) => {
+			c.aiSpd *= 1.18;
+			c.aiReact = Math.min(c.aiReact + 0.04, 0.6);
+		},
+	},
+	{
+		id: "marionettist",
+		name: "MARIONETTIST",
+		tag: "STRINGS",
+		diff: "D",
+		mod: (c) => {
+			c.aiSpd *= 1.14;
+			c.aiReact = Math.min(c.aiReact + 0.05, 0.6);
+		},
+	},
+	// C-tier (now includes Fortress and Juggernaut, nerfed to fit)
 	{
 		id: "tricky",
 		name: "TRICKSTER",
@@ -701,83 +721,63 @@ const ENEMIES = [
 			c.aiSpd *= 1.1;
 		},
 	},
-	// B-tier
-	{
-		id: "clown",
-		name: "CLOWN",
-		tag: "JOKE",
-		diff: "B",
-		mod: (c) => {
-			c.aiSpd *= 1.26;
-			c.aiReact = Math.min(c.aiReact + 0.08, 0.94);
-		},
-	},
-	{
-		id: "marionettist",
-		name: "MARIONETTIST",
-		tag: "STRINGS",
-		diff: "B",
-		mod: (c) => {
-			c.aiSpd *= 1.22;
-			c.aiReact = Math.min(c.aiReact + 0.1, 0.95);
-		},
-	},
-	// A-tier
 	{
 		id: "tank",
 		name: "FORTRESS",
 		tag: "##",
-		diff: "A",
+		diff: "C",
 		mod: (c) => {
-			c.aiSpd *= 0.85;
+			c.aiSpd *= 0.9;
+			c.aiReact = Math.min(c.aiReact + 0.04, 0.65);
 		},
 	},
 	{
 		id: "jugg",
 		name: "JUGGERNAUT",
 		tag: "###",
-		diff: "A",
+		diff: "C",
 		mod: (c) => {
-			c.aiReact = Math.min(c.aiReact + 0.08, 0.95);
+			c.aiReact = Math.min(c.aiReact + 0.03, 0.55);
 		},
 	},
-	// S-tier
+	// B-tier
 	{
 		id: "sniper",
 		name: "SNIPER",
 		tag: "+",
-		diff: "S",
+		diff: "B",
 		mod: (c) => {
-			c.aiReact = Math.min(c.aiReact + 0.14, 0.97);
+			c.aiReact = Math.min(c.aiReact + 0.1, 0.85);
 		},
 	},
 	{
 		id: "hunter",
 		name: "HUNTER",
 		tag: ">+",
-		diff: "S",
+		diff: "B",
 		mod: (c) => {
-			c.aiReact = Math.min(c.aiReact + 0.1, 0.96);
-			c.aiSpd *= 1.2;
+			c.aiReact = Math.min(c.aiReact + 0.08, 0.82);
+			c.aiSpd *= 1.15;
 		},
 	},
+	// A-tier
 	{
 		id: "thunder",
 		name: "THUNDERLORD",
-		tag: "⚡",
-		diff: "S",
+		tag: "\u26A1",
+		diff: "A",
 		mod: (c) => {
-			c.aiReact = Math.min(c.aiReact + 0.12, 0.97);
+			c.aiReact = Math.min(c.aiReact + 0.12, 0.92);
 			c.aiSpd *= 1.16;
 			c.trickAng = true;
 		},
 	},
-	// SS-tier
+	// S-tier
 	{
 		id: "accel",
 		name: "CHAOS",
 		tag: "!!",
-		diff: "SS",
+		diff: "S",
 		mod: (c) => {
 			c.chaos = true;
 			c.aiSpd *= 1.1;
@@ -787,19 +787,19 @@ const ENEMIES = [
 		id: "warden",
 		name: "WARDEN",
 		tag: "!#",
-		diff: "SS",
+		diff: "S",
 		mod: (c) => {
 			c.aiReact = Math.min(c.aiReact + 0.15, 0.97);
 			c.chaos = true;
 			c.trickAng = true;
 		},
 	},
-	// SSS-tier (boss-only) - terrifying
+	// SS-tier
 	{
 		id: "apex",
 		name: "APEX",
 		tag: "\u2620",
-		diff: "SSS",
+		diff: "SS",
 		mod: (c) => {
 			c.chaos = true;
 			c.trickAng = true;
@@ -807,6 +807,7 @@ const ENEMIES = [
 			c.aiSpd *= 1.3;
 		},
 	},
+	// SSS-tier
 	{
 		id: "void",
 		name: "THE VOID",
@@ -838,7 +839,7 @@ function getEnemiesForDiff(diff) {
 	return ENEMIES.filter((e) => e.diff === diff);
 }
 
-// ═══ ENEMY ABILITIES ═══
+// --- ENEMY ABILITIES ---
 // Each ability: id, name, desc, icon, cd (cooldown), dur (active duration), minDiff (minimum rank index to appear)
 const E_ABILS = {
 	none: { id: "none", name: "", desc: "", icon: "", cd: 999 },
@@ -909,10 +910,10 @@ const E_ABILS = {
 	accel: {
 		id: "accel",
 		name: "OVERDRIVE",
-		desc: "Ball accelerates to 2x speed for 2s",
+		desc: "Ball accelerates to 1.5x speed for 1.5s",
 		icon: "\u00BB",
-		cd: 8,
-		dur: 2,
+		cd: 10,
+		dur: 1.5,
 	},
 	clone: {
 		id: "clone",
@@ -948,7 +949,7 @@ const ENEMY_ABIL_MAP = {
 	void: "rampage",
 };
 
-// ═══ AUDIO ═══
+// --- AUDIO ---
 let _ac = null;
 const ac = () => {
 	if (!_ac)
@@ -1537,49 +1538,25 @@ const E_UPS = [
 	},
 ];
 
-// ═══ UPGRADE POOL (ability-only) ═══
+// --- UPGRADE POOL (ability-only) ---
 const ALL_CARDS = [
 	// COMMON
-	{
-		id: "common_quickhands",
-		name: "QUICK HANDS",
-		desc: "Ability cooldowns recover 12% faster",
-		tier: "common",
-		type: "ability",
-		fn: (s) => {
-			s.cdMul *= 0.88;
-		},
-	},
-	{
-		id: "common_longreach",
-		name: "LONG REACH",
-		desc: "Paddle height +10%",
-		tier: "common",
-		type: "ability",
-		fn: (s) => {
-			s.ph = Math.min(s.ph * 1.1, BASE_PAD_H * 1.6);
-		},
-	},
-	{
-		id: "common_footspeed",
-		name: "FOOTWORK",
-		desc: "Paddle movement speed +8%",
-		tier: "common",
-		type: "ability",
-		fn: (s) => {
-			s.pSpd *= 1.08;
-		},
-	},
-	{
-		id: "common_sidestep",
-		name: "SIDESTEP",
-		desc: "Horizontal movement range +25%",
-		tier: "common",
-		type: "ability",
-		fn: (s) => {
-			s.horizMul *= 1.25;
-		},
-	},
+	// {
+	// 	id: "common_quickhands",
+	// 	name: "QUICK HANDS",
+	// 	desc: "Ability cooldowns recover 12% faster",
+	// 	tier: "common",
+	// 	type: "ability",
+	// 	fn: (s) => { s.cdMul *= 0.88; },
+	// },
+	// {
+	// 	id: "common_longreach",
+	// 	name: "LONG REACH",
+	// 	desc: "Paddle height +10%",
+	// 	tier: "common",
+	// 	type: "ability",
+	// 	fn: (s) => { s.ph = Math.min(s.ph * 1.1, BASE_PAD_H * 1.6); },
+	// },
 	{
 		id: "common_edgework",
 		name: "EDGE WORK",
@@ -1590,78 +1567,178 @@ const ALL_CARDS = [
 			s.edge = true;
 		},
 	},
-	// UNCOMMON
-	{
-		id: "bounceback",
-		name: "SNAPBACK",
-		desc: "Ball speeds up an EXTRA 5% each time it bounces off a wall",
-		tier: "uncommon",
-		type: "ability",
-		fn: (s) => {
-			s.rico = true;
-		},
-	},
-	{
-		id: "rally_cooldown",
-		name: "RALLY RHYTHM",
-		desc: "Every rally hit reduces ability cooldown by 0.2s",
-		tier: "uncommon",
-		type: "ability",
-		fn: (s) => {
-			s.cdRally = true;
-		},
-	},
-	{
-		id: "midline_focus",
-		name: "MIDLINE FOCUS",
-		desc: "When the ball passes midfield toward you, time slows slightly",
-		tier: "uncommon",
-		type: "ability",
-		fn: (s) => {
-			s.midlineSlow = true;
-		},
-	},
-	{
-		id: "tailwind",
-		name: "TAILWIND",
-		desc: "Ball velocity +15% when flying toward enemy, normal when returning",
-		tier: "rare",
-		type: "ability",
-		fn: (s) => {
-			s.tailwind = true;
-		},
-	},
-	{
-		id: "reflex_slow",
-		name: "REFLEX SLOW",
-		desc: "Whenever enemy uses an ability, time slows for 1 second",
-		tier: "uncommon",
-		type: "ability",
-		fn: (s) => {
-			s.reflexSlow = true;
-		},
-	},
-	// RARE
 	{
 		id: "velocitysurge",
 		name: "VELOCITY SURGE",
 		desc: "When ball exceeds 50% base speed, your paddle grows 20% and moves 25% faster",
-		tier: "rare",
+		tier: "common",
 		type: "ability",
 		fn: (s) => {
 			s.velocitySurge = true;
 		},
 	},
 	{
-		id: "oracle_eye",
-		name: "ORACLE SIGHT",
-		desc: "Predictive vision: reveals a projected ball path during rallies.",
-		tier: "legendary",
+		id: "straight_shot",
+		name: "STRAIGHT SHOT",
+		desc: "Return the ball straight for a 25% speed boost lasting 1 second",
+		tier: "common",
+		type: "ability",
+		fn: (s) => { s.straightShot = true; },
+	},
+	// UNCOMMON
+	// {
+	// 	id: "bounceback",
+	// 	name: "SNAPBACK",
+	// 	desc: "Ball speeds up an EXTRA 5% each time it bounces off a wall",
+	// 	tier: "uncommon",
+	// 	type: "ability",
+	// 	fn: (s) => { s.rico = true; },
+	// },
+	// {
+	// 	id: "rally_cooldown",
+	// 	name: "RALLY RHYTHM",
+	// 	desc: "Every rally hit reduces ability cooldown by 0.2s",
+	// 	tier: "uncommon",
+	// 	type: "ability",
+	// 	fn: (s) => { s.cdRally = true; },
+	// },
+	{
+		id: "homing",
+		name: "HUNTER BALL",
+		desc: "Ball curves toward gaps in enemy defense",
+		tier: "uncommon",
 		type: "ability",
 		fn: (s) => {
-			s.oracleSight = true;
+			s.homing = true;
 		},
 	},
+	{
+		id: "speed_burst",
+		name: "ADRENALINE",
+		desc: "Random chance the ball surges 35% faster for 0.22s when flying toward enemy",
+		tier: "uncommon",
+		type: "ability",
+		fn: (s) => { s.speedBurst = true; },
+	},
+	{
+		id: "lockdown",
+		name: "LOCKDOWN",
+		desc: "Enemy cannot move for 0.6s while any ability or special is active",
+		tier: "uncommon",
+		type: "ability",
+		fn: (s) => { s.lockdown = true; },
+	},
+	{
+		id: "phantom_thunder",
+		name: "THUNDER PHANTOM",
+		desc: "Every 2 rally hits, fires 3 thunder phantoms that stun enemy",
+		tier: "uncommon",
+		type: "ability",
+		fn: (s) => { s.phantomThunder = true; },
+	},
+	{
+		id: "phantom_slow",
+		name: "TWIN GHOSTS",
+		desc: "Every 2 rally hits, spawns 3 green phantoms that slow enemy",
+		tier: "uncommon",
+		type: "ability",
+		fn: (s) => { s.phantomSlow = true; },
+	},
+	{
+		id: "phantom_fire",
+		name: "INFERNO PHANTOM",
+		desc: "Every 2 rally hits, fires 3 fire phantoms that apply burn ticks",
+		tier: "uncommon",
+		type: "ability",
+		fn: (s) => { s.phantomFire = true; },
+	},
+	// {
+	// 	id: "reflex_slow",
+	// 	name: "REFLEX SLOW",
+	// 	desc: "Whenever enemy uses an ability, time slows for 1 second",
+	// 	tier: "uncommon",
+	// 	type: "ability",
+	// 	fn: (s) => { s.reflexSlow = true; },
+	// },
+	// RARE
+	{
+		id: "gravity2",
+		name: "DEAD ZONE",
+		desc: "Ball is strongly pulled toward the enemy goal at all times",
+		tier: "rare",
+		type: "ability",
+		fn: (s) => {
+			s.singularity = true;
+		},
+	},
+	{
+		id: "redirect",
+		name: "REDIRECT",
+		desc: "After your return, the ball curves once toward the enemy goal",
+		tier: "rare",
+		type: "ability",
+		fn: (s) => {
+			s.redirect = true;
+		},
+	},
+	{
+		id: "concussion",
+		name: "FREEZE",
+		desc: "Each paddle hit freezes the enemy for 0.25s and slows them for 0.35s",
+		tier: "rare",
+		type: "ability",
+		fn: (s) => {
+			s.concussion = true;
+		},
+	},
+	// {
+	// 	id: "tailwind",
+	// 	name: "TAILWIND",
+	// 	desc: "Ball velocity +15% when flying toward enemy, normal when returning",
+	// 	tier: "rare",
+	// 	type: "ability",
+	// 	fn: (s) => { s.tailwind = true; },
+	// },
+	{
+		id: "delusio",
+		name: "DELUSIO",
+		desc: "Every hit makes the enemy lose track of the ball for 0.5 seconds",
+		tier: "rare",
+		type: "ability",
+		fn: (s) => { s.delusio = true; },
+	},
+	{
+		id: "mirage",
+		name: "MIRAGE",
+		desc: "Each hit spawns a decoy ball the enemy tracks. Vanishes at midfield, revealing the real ball",
+		tier: "rare",
+		type: "ability",
+		fn: (s) => { s.mirage = true; },
+	},
+	{
+		id: "storm_strike",
+		name: "STORM STRIKE",
+		desc: "Every 2nd hit fires a lightning bolt that stuns the enemy",
+		tier: "rare",
+		type: "ability",
+		fn: (s) => { s.stormStrike = true; },
+	},
+	// {
+	// 	id: "spin_drag",
+	// 	name: "SPIN DRAG",
+	// 	desc: "The more spin you put on a return, the slower the enemy moves (up to 10%)",
+	// 	tier: "rare",
+	// 	type: "ability",
+	// 	fn: (s) => { s.spinDrag = true; },
+	// },
+	// {
+	// 	id: "midline_focus",
+	// 	name: "MIDLINE FOCUS",
+	// 	desc: "When the ball passes midfield toward you, time slows slightly",
+	// 	tier: "rare",
+	// 	type: "ability",
+	// 	fn: (s) => { s.midlineSlow = true; },
+	// },
 	// EPIC
 	{
 		id: "vampire",
@@ -1674,36 +1751,34 @@ const ALL_CARDS = [
 		},
 	},
 	{
-		id: "gravity2",
-		name: "DEAD ZONE",
-		desc: "Ball is strongly pulled toward the enemy goal at all times",
-		tier: "uncommon",
-		type: "ability",
-		fn: (s) => {
-			s.singularity = true;
-		},
-	},
-	{
-		id: "redirect",
-		name: "REDIRECT",
-		desc: "After your return, the ball curves once toward the enemy goal",
-		tier: "uncommon",
-		type: "ability",
-		fn: (s) => {
-			s.redirect = true;
-		},
-	},
-	// LEGENDARY
-	{
-		id: "homing",
-		name: "HUNTER BALL",
-		desc: "Ball curves toward gaps in enemy defense",
+		id: "clone",
+		name: "DOPPELGANGER",
+		desc: "A phantom paddle mirrors you on your side",
 		tier: "epic",
 		type: "ability",
 		fn: (s) => {
-			s.homing = true;
+			s.doppel = true;
 		},
 	},
+	{
+		id: "rally_decay",
+		name: "ATTRITION",
+		desc: "The longer the rally, the worse the enemy plays. Scales with combo count",
+		tier: "epic",
+		type: "ability",
+		fn: (s) => { s.rallyDecay = true; },
+	},
+	{
+		id: "oracle_eye",
+		name: "ORACLE SIGHT",
+		desc: "Predictive vision: reveals a projected ball path during rallies.",
+		tier: "uncommon",
+		type: "ability",
+		fn: (s) => {
+			s.oracleSight = true;
+		},
+	},
+	// LEGENDARY
 	{
 		id: "multicast",
 		name: "ECHO CAST",
@@ -1712,16 +1787,6 @@ const ALL_CARDS = [
 		type: "ability",
 		fn: (s) => {
 			s.multicast = true;
-		},
-	},
-	{
-		id: "concussion",
-		name: "FREEZE",
-		desc: "Each paddle hit freezes the enemy for 0.25s and slows them for 0.35s",
-		tier: "uncommon",
-		type: "ability",
-		fn: (s) => {
-			s.concussion = true;
 		},
 	},
 	{
@@ -1734,79 +1799,25 @@ const ALL_CARDS = [
 			s.aiCap = true;
 		},
 	},
-	// MYTHICAL
 	{
-		id: "clone",
-		name: "DOPPELGANGER",
-		desc: "A phantom paddle mirrors you on your side",
-		tier: "legendary",
+		id: "angel_steps",
+		name: "ANGEL STEPS",
+		desc: "When you'd miss, auto-teleport to save the ball. 2 uses per game.",
+		tier: "rare",
 		type: "ability",
-		fn: (s) => {
-			s.doppel = true;
-		},
+		fn: (s) => { s.angelSteps = 2; },
 	},
-	// SECRET (combat abilities)
+	// MYTHICAL / SECRET
 	{
 		id: "sec_storm",
 		name: "STORM CALLER",
 		desc: "Passive lightning rain: ~3 bolts/sec strike randomly near enemy paddle",
-		tier: "secret",
+		tier: "mythical",
 		type: "ability",
 		fn: (s) => {
 			s.stormCaller = true;
 		},
 	},
-	// NEW EPIC ABILITIES
-	{
-		id: "lockdown",
-		name: "LOCKDOWN",
-		desc: "Enemy cannot move for 0.6s while any ability or special is active",
-		tier: "epic",
-		type: "ability",
-		fn: (s) => { s.lockdown = true; },
-	},
-	{
-		id: "phantom_thunder",
-		name: "THUNDER PHANTOM",
-		desc: "Every 2 rally hits, fires 3 random thunder phantoms (6.5s) that stun enemy (no score)",
-		tier: "rare",
-		type: "ability",
-		fn: (s) => { s.phantomThunder = true; },
-	},
-	{
-		id: "phantom_slow",
-		name: "TWIN GHOSTS",
-		desc: "Every 2 rally hits, spawns 3 random green phantoms (6.5s) that slow enemy (no score)",
-		tier: "rare",
-		type: "ability",
-		fn: (s) => { s.phantomSlow = true; },
-	},
-	{
-		id: "phantom_fire",
-		name: "INFERNO PHANTOM",
-		desc: "Every 2 rally hits, fires 3 random fire phantoms (6.5s) that apply burn ticks",
-		tier: "rare",
-		type: "ability",
-		fn: (s) => { s.phantomFire = true; },
-	},
-	// NEW MYTHICAL
-	{
-		id: "storm_strike",
-		name: "STORM STRIKE",
-		desc: "Every 2nd hit fires a lightning bolt identical to the enemy lightning ability",
-		tier: "legendary",
-		type: "ability",
-		fn: (s) => { s.stormStrike = true; },
-	},
-	{
-		id: "angel_steps",
-		name: "ANGEL STEPS",
-		desc: "When you'd miss, auto-teleport to save the ball. 2 uses per game.",
-		tier: "mythical",
-		type: "ability",
-		fn: (s) => { s.angelSteps = 2; },
-	},
-	// NEW SECRET
 	{
 		id: "sec_paradox_engine",
 		name: "PARADOX ENGINE",
@@ -1822,55 +1833,6 @@ const ALL_CARDS = [
 		tier: "secret",
 		type: "ability",
 		fn: (s) => { s.nullField = true; },
-	},
-	// NEW ABILITIES
-	{
-		id: "delusio",
-		name: "DELUSIO",
-		desc: "Every hit makes the enemy lose track of the ball for 0.5 seconds",
-		tier: "mythical",
-		type: "ability",
-		fn: (s) => { s.delusio = true; },
-	},
-	{
-		id: "speed_burst",
-		name: "ADRENALINE",
-		desc: "Random chance the ball surges 35% faster for 0.22s when flying toward enemy",
-		tier: "epic",
-		type: "ability",
-		fn: (s) => { s.speedBurst = true; },
-	},
-	{
-		id: "rally_decay",
-		name: "ATTRITION",
-		desc: "The longer the rally, the worse the enemy plays. Scales with combo count",
-		tier: "mythical",
-		type: "ability",
-		fn: (s) => { s.rallyDecay = true; },
-	},
-	{
-		id: "spin_drag",
-		name: "SPIN DRAG",
-		desc: "The more spin you put on a return, the slower the enemy moves (up to 10%)",
-		tier: "rare",
-		type: "ability",
-		fn: (s) => { s.spinDrag = true; },
-	},
-	{
-		id: "straight_shot",
-		name: "STRAIGHT SHOT",
-		desc: "Return the ball straight for a 25% speed boost lasting 1 second",
-		tier: "rare",
-		type: "ability",
-		fn: (s) => { s.straightShot = true; },
-	},
-	{
-		id: "mirage",
-		name: "MIRAGE",
-		desc: "Each hit spawns a bright decoy ball the enemy tracks. It vanishes at midfield, then the real ball is revealed",
-		tier: "mythical",
-		type: "ability",
-		fn: (s) => { s.mirage = true; },
 	},
 	{
 		id: "sec_master",
@@ -1897,7 +1859,7 @@ const ALL_CARDS = [
 	},
 ];
 
-// ═══ CARD SELECTION ═══
+// --- CARD SELECTION ---
 // Shared weighted sampler used by both getCardsForTier and getCardsForDiff.
 // pool      – pre-filtered array of card definitions
 // maxIdx    – TIER_ORDER index of the highest allowed tier
@@ -1965,14 +1927,14 @@ function waveCfg(wv) {
 	const diff = boss
 		? DIFF_RANKS[Math.min(rankIdx + 1, DIFF_RANKS.length - 1)]
 		: DIFF_RANKS[rankIdx];
-	let aiSpd, aiReact;
-	if (rankIdx >= 5) {
-		aiSpd = 260 + wv * 30 + (boss ? 80 : 0);
-		aiReact = clamp(0.25 + wv * 0.07 + (boss ? 0.15 : 0), 0, 0.97);
-	} else {
-		aiSpd = 130 + wv * 8 + (boss ? 14 : 0);
-		aiReact = clamp(0.01 + wv * 0.01 + (boss ? 0.02 : 0), 0, 0.14);
-	} // below A: intentionally much weaker
+	// Smooth scaling: no cliff between tiers, gradual ramp
+	let aiSpd = 100 + wv * 14 + (boss ? 25 : 0);
+	let aiReact = clamp(0.03 + wv * 0.02 + (boss ? 0.04 : 0), 0, 0.97);
+	// High ranks still get a bump
+	if (rankIdx >= 6) {
+		aiSpd += 60 + (rankIdx - 6) * 40;
+		aiReact = clamp(aiReact + 0.12, 0, 0.97);
+	}
 	const eH = BASE_PAD_H;
 	const pool = getEnemiesForDiff(diff);
 	const enemy =
@@ -1993,22 +1955,14 @@ function waveCfg(wv) {
 		jitter: false,
 	};
 	enemy.mod(cfg);
-	softenLowRankAi(cfg);
 	return cfg;
 }
 
 function softenLowRankAi(cfg) {
-	const idx = DIFF_RANKS.indexOf(cfg?.diff || "");
-	const aIdx = DIFF_RANKS.indexOf("A");
-	if (idx < 0 || idx >= aIdx) return;
-	cfg.aiSpd = Math.max(85, cfg.aiSpd * 0.65);
-	cfg.aiReact = clamp(cfg.aiReact * 0.62, 0.01, 0.14);
-	if (cfg.diff === "B") {
-		cfg.aiSpd *= 1.12;
-	}
+	// no longer used but kept for dev mode compatibility
 }
 
-// ═══ GAME STATE ═══
+// --- GAME STATE ---
 let curScreen = "menu",
 	paused = false,
 	padId = "classic",
@@ -2022,7 +1976,7 @@ let curScreen = "menu",
 	keysDown = {},
 	chosenOppCfg = null;
 
-// ═══ TUTORIAL SYSTEM ═══
+// --- TUTORIAL SYSTEM ---
 const TUT_STEPS = [
 	{
 		id: "move",
@@ -2248,6 +2202,8 @@ function finishTutorial() {
 	if (tip) tip.remove();
 	const oppTip = document.getElementById("tut-opp-tip");
 	if (oppTip) oppTip.remove();
+	const tutSkip = document.getElementById("tut-skip-btn");
+	if (tutSkip) tutSkip.remove();
 	tut = null;
 	// Route to real opponent select for the actual game
 	wave = 1;
@@ -2314,6 +2270,16 @@ function showTutorialEnemySelect() {
 	tip.style.cssText = "text-align:center;color:#8f8;font-size:13px;letter-spacing:2px;margin-top:18px;font-family:inherit;animation:pulse 1.5s ease-in-out infinite;";
 	tip.textContent = "\u25B2  SELECT YOUR OPPONENT TO BEGIN  \u25B2";
 	grid.parentNode.appendChild(tip);
+
+	// Add skip tutorial button on enemy select
+	const skipBtn = document.createElement("div");
+	skipBtn.id = "tut-skip-btn";
+	skipBtn.style.cssText = "text-align:center;color:#aab;font-size:12px;letter-spacing:4px;margin-top:14px;cursor:pointer;padding:6px 18px;border:1px solid #444;border-radius:3px;display:inline-block;transition:all 0.2s;";
+	skipBtn.textContent = "[ESC] SKIP TUTORIAL";
+	skipBtn.onmouseenter = () => { skipBtn.style.color = "#fff"; skipBtn.style.borderColor = "#888"; };
+	skipBtn.onmouseleave = () => { skipBtn.style.color = "#aab"; skipBtn.style.borderColor = "#444"; };
+	skipBtn.onclick = () => { SFX.sel(); skipTutorial(); };
+	grid.parentNode.appendChild(skipBtn);
 
 	showScreen("opp-screen");
 	initCardPhysics(grid);
@@ -2475,6 +2441,7 @@ function resetBall(g, dir) {
 	const carrySpd = baseSpd + (g.rallyBase - baseSpd) * 0.15;
 	g.rallyBase = carrySpd;
 	g.rallyHits = 0;
+	g._playerHits = 0;
 	g.ballSpd = carrySpd;
 	g.bx = GW / 2;
 	g.by = GH / 2 + rng(-60, 60);
@@ -2663,6 +2630,7 @@ function newGame(pid, wv, sv, eUps, oppCfg) {
 		bolts: [], // Storm: active lightning bolt projectiles
 		gravWell: null,
 		gravWellT: 0, // Void: gravity well position + timer
+		warpFieldT: 0, // Void: warp field duration
 		// Master of Skill state
 		masterSkill: sv?.masterSkill ?? false,
 		siphon: sv?.siphon ?? false,
@@ -2949,7 +2917,7 @@ function isKleinLossState(g) {
 	);
 }
 
-// ═══ UPDATE ═══
+// --- UPDATE ---
 function update(dt) {
 	// Tutorial pre-game phases (intro, enemySelect) — tick even without g
 	if (!g && tut && tut.active) {
@@ -3427,7 +3395,31 @@ function update(dt) {
 		g.gravWellT -= dt;
 		if (g.gravWellT <= 0) g.gravWell = null;
 	}
-	// Gravity well: direction-based behavior
+	// Warp field: curve ball hard toward enemy weak spot
+	if (g.warpFieldT > 0) {
+		g.warpFieldT -= dt;
+		if (g.bvx > 0) {
+			// Ball going toward enemy: curve toward gap in defense
+			const gapY = getEnemyOpenLaneY(g);
+			const dy = gapY - g.by;
+			const curveStr = 420;
+			g.bvy += Math.sign(dy) * Math.min(Math.abs(dy), curveStr) * dt;
+			// Small forward push
+			g.bvx += 40 * dt;
+		} else {
+			// Ball coming back: gentle curve to help player catch it
+			const dy = g.py - g.by;
+			g.bvy += Math.sign(dy) * Math.min(Math.abs(dy) * 0.5, 120) * dt;
+		}
+		// Normalize speed so warp doesn't make ball too fast/slow
+		const curSpd = Math.hypot(g.bvx, g.bvy);
+		if (curSpd > g.ballSpd * 1.15) {
+			const r = (g.ballSpd * 1.15) / curSpd;
+			g.bvx *= r;
+			g.bvy *= r;
+		}
+	}
+	// Gravity well: direction-based behavior (legacy, still used by DEAD ZONE upgrade)
 	if (g.gravWell && g.gravWellT > 0) {
 		const dx = g.gravWell.x - g.bx,
 			dy = g.gravWell.y - g.by;
@@ -3578,7 +3570,7 @@ function update(dt) {
 	if (g.centerComboFlash > 0) g.centerComboFlash -= dt;
 	if (g.centerComboPopT > 0) g.centerComboPopT -= dt;
 
-	// ═══ STORM CALLER: passive lightning rain ~3 bolts/sec near enemy ═══
+	// --- STORM CALLER: passive lightning rain ~3 bolts/sec near enemy ---
 	if (g.stormCaller && g.startPause <= 0) {
 		g._stormRainT = (g._stormRainT || 0) - dt;
 		if (g._stormRainT <= 0) {
@@ -3595,7 +3587,7 @@ function update(dt) {
 		}
 	}
 
-	// ═══ PARADOX ENGINE: every 0.5s redirect ball toward enemy ═══
+	// --- PARADOX ENGINE: every 0.5s redirect ball toward enemy ---
 	if (g.paradoxEngine && g.bvx > 0 && g.startPause <= 0) {
 		g._paradoxTick -= dt;
 		if (g._paradoxTick <= 0) {
@@ -3607,13 +3599,13 @@ function update(dt) {
 		}
 	}
 
-	// ═══ LOCKDOWN: freeze enemy while their ability is active ═══
+	// --- LOCKDOWN: freeze enemy while their ability is active ---
 	if (g.lockdown && g.eAbilActive > 0) {
 		g.lockdownFreezeT = 0.6;
 	}
 	if (g.lockdownFreezeT > 0) g.lockdownFreezeT -= dt;
 
-	// ═══ NULL: disable enemy abilities in cycles ═══
+	// --- NULL: disable enemy abilities in cycles ---
 	if (g.nullField) {
 		if (g._nullActiveT > 0) {
 			g._nullActiveT -= dt;
@@ -3625,7 +3617,7 @@ function update(dt) {
 		}
 	}
 
-	// ═══ FIRE PHANTOM BURN TICKS ═══
+	// --- FIRE PHANTOM BURN TICKS ---
 	if (g._burnT > 0) {
 		g._burnT -= dt;
 		g._burnTickT -= dt;
@@ -3639,10 +3631,10 @@ function update(dt) {
 	// Angel Steps flash decay
 	if (g._angelFlashT > 0) g._angelFlashT -= dt;
 
-	// ═══ DELUSIO: enemy tracks random position while active ═══
+	// --- DELUSIO: enemy tracks random position while active ---
 	if (g._delusioT > 0) g._delusioT -= dt;
 
-	// ═══ SPEED BURST (ADRENALINE): random chance when ball heading to enemy ═══
+	// --- SPEED BURST (ADRENALINE): random chance when ball heading to enemy ---
 	if (g.speedBurst && g.bvx > 0 && g.startPause <= 0 && g._speedBurstT <= 0) {
 		if (Math.random() < dt * 1.5) { // ~1.5 chances/sec
 			g._speedBurstT = 0.22;
@@ -3656,31 +3648,19 @@ function update(dt) {
 	if (g._speedBurstT > 0) {
 		g._speedBurstT -= dt;
 		if (g._speedBurstT <= 0) {
-			// Restore speed to normal
-			const curSpd = Math.hypot(g.bvx, g.bvy);
-			if (curSpd > g.ballSpd * 1.1) {
-				const r = g.ballSpd / curSpd;
-				g.bvx *= r;
-				g.bvy *= r;
-			}
+			// Gradually normalize — the main normalization lerp handles the rest
 		}
 	}
 
-	// ═══ STRAIGHT SHOT timer decay ═══
+	// --- STRAIGHT SHOT timer decay ---
 	if (g._straightShotT > 0) {
 		g._straightShotT -= dt;
 		if (g._straightShotT <= 0) {
-			// Normalize speed back down
-			const curSpd = Math.hypot(g.bvx, g.bvy);
-			if (curSpd > g.ballSpd * 1.1) {
-				const r = g.ballSpd / curSpd;
-				g.bvx *= r;
-				g.bvy *= r;
-			}
+			// Main normalization lerp handles the gradual return
 		}
 	}
 
-	// ═══ MIRAGE DECOY movement ═══
+	// --- MIRAGE DECOY movement ---
 	if (g._mirageDecoy && g._mirageDecoy.active) {
 		const dc = g._mirageDecoy;
 		dc.life -= dt;
@@ -3858,16 +3838,6 @@ function update(dt) {
 		g.bvy = Math.abs(g.bvy);
 		SFX.wall();
 		addSparks(g, g.bx, 0, 4, 60, col.t);
-		// Add 3% of base speed
-		const addedSpd = g.bs * 0.03;
-		const s = Math.hypot(g.bvx, g.bvy);
-		if (s > 0.01) {
-			const newSpd = s + addedSpd;
-			g.bvx *= newSpd / s;
-			g.bvy *= newSpd / s;
-		}
-		g.ballSpd += addedSpd;
-		g.rallyBase += addedSpd;
 		ricoB(g);
 	}
 	if (g.by + bs2 > GH) {
@@ -3875,16 +3845,6 @@ function update(dt) {
 		g.bvy = -Math.abs(g.bvy);
 		SFX.wall();
 		addSparks(g, g.bx, GH, 4, 60, col.t);
-		// Add 3% of base speed
-		const addedSpd = g.bs * 0.03;
-		const s = Math.hypot(g.bvx, g.bvy);
-		if (s > 0.01) {
-			const newSpd = s + addedSpd;
-			g.bvx *= newSpd / s;
-			g.bvy *= newSpd / s;
-		}
-		g.ballSpd += addedSpd;
-		g.rallyBase += addedSpd;
 		ricoB(g);
 	}
 	if (g.placedWall) {
@@ -3924,7 +3884,8 @@ function update(dt) {
 	const cs = Math.hypot(g.bvx, g.bvy);
 	// Only normalize when no ability is actively warping ball physics
 	const skipNorm =
-		g.tsT > 0 || g.eAbilPhase === "strike" || g.pullT > 0 || g.spinCurveT > 0 || Math.abs(g.spin) > 15;
+		g.tsT > 0 || g.eAbilPhase === "strike" || g.pullT > 0 || g.spinCurveT > 0 || Math.abs(g.spin) > 15
+		|| g._speedBurstT > 0 || g._straightShotT > 0;
 	if (!skipNorm && cs > 1) {
 		const maxSpd = g.ballSpd * 2.8;
 		if (cs > maxSpd) {
@@ -3932,7 +3893,7 @@ function update(dt) {
 			g.bvx *= r;
 			g.bvy *= r;
 		} else {
-			const r = lerp(1, g.ballSpd / cs, dt * 5);
+			const r = lerp(1, g.ballSpd / cs, dt * 1.8);
 			g.bvx *= r;
 			g.bvy *= r;
 		}
@@ -4012,6 +3973,7 @@ function update(dt) {
 			g.bx = pR + bs2 + 1;
 			const finalAng = Math.atan2(g.bvy, g.bvx); // used by afterimage
 			g.combo++;
+			g._playerHits = (g._playerHits || 0) + 1;
 			applyRallyHitSpeed(g);
 			// Tutorial: track rally hits and spin
 			if (tut && tut.active) {
@@ -4072,7 +4034,6 @@ function update(dt) {
 					const boost = 1.25;
 					g.bvx *= boost;
 					g.bvy *= boost;
-					g.ballSpd *= boost;
 					addSparks(g, g.bx, g.by, 10, 100, [0.5, 0.9, 1]);
 					tone(400, 0.06, "sine", 0.04);
 				}
@@ -4151,7 +4112,7 @@ function update(dt) {
 				}
 			}
 			// Phantom Thunder Ball: now fires 3 random-direction stun phantoms every 2 rallies
-			if (g.phantomThunder && g.rallyHits > 0 && g.rallyHits % 2 === 0) {
+			if (g.phantomThunder && g._playerHits > 0 && g._playerHits % 2 === 0) {
 				const aSpd = g.ballSpd * 1.15;
 				for (let ti = 0; ti < 3; ti++) {
 					const aAng = (Math.random() - 0.5) * 1.2;
@@ -4167,7 +4128,7 @@ function update(dt) {
 				tone(200, 0.06, "square", 0.03);
 			}
 			// Twin Phantom Slow Balls: now 3 random-direction slow phantoms every 2 rallies
-			if (g.phantomSlow && g.rallyHits > 0 && g.rallyHits % 2 === 0) {
+			if (g.phantomSlow && g._playerHits > 0 && g._playerHits % 2 === 0) {
 				const aSpd = g.ballSpd * 1.0;
 				for (let si = 0; si < 3; si++) {
 					const aAng = (Math.random() - 0.5) * 1.2;
@@ -4182,7 +4143,7 @@ function update(dt) {
 				addSparks(g, g.bx, g.by, 8, 80, [0.3, 1, 0.4]);
 			}
 			// Fire Phantom Ball: now fires 3 random-direction fire phantoms every 2 rallies
-			if (g.phantomFire && g.rallyHits > 0 && g.rallyHits % 2 === 0) {
+			if (g.phantomFire && g._playerHits > 0 && g._playerHits % 2 === 0) {
 				const aSpd = g.ballSpd * 1.05;
 				for (let fi = 0; fi < 3; fi++) {
 					const aAng = (Math.random() - 0.5) * 1.2;
@@ -4783,7 +4744,11 @@ function update(dt) {
 						considerThreat(mb.x, mb.y, mb.vx, mb.vy);
 					}
 				}
-				g.aiRandOff = (1 - g.aiReact) * 40 * (Math.random() - 0.5);
+					g.aiRandOff = (1 - g.aiReact) * 40 * (Math.random() - 0.5);
+				// Spin confuses AI — sluggish tracking, not directional dodge
+				if (Math.abs(g.spin) > 15) {
+					g.aiRandOff += (Math.random() - 0.5) * Math.abs(g.spin) * 0.3;
+				}
 				g.aiTgt = lerp(g.by, perf, g.aiReact) + g.aiRandOff;
 			} else if (g.ghostBall && g.bvx > 0) {
 				g.aiTgt = GH / 2 + Math.sin(g.t * 2.5) * 130;
@@ -4794,11 +4759,11 @@ function update(dt) {
 			g.aiTgt = clamp(g.aiTgt, g.eH / 2, GH - g.eH / 2);
 		}
 		tgt = g.aiTgt;
-		// ═══ DELUSIO: AI tracks random position ═══
+		// --- DELUSIO: AI tracks random position ---
 		if (g.delusio && g._delusioT > 0) {
 			tgt = GH / 2 + (Math.sin(g.t * 7) * 0.5 + Math.cos(g.t * 11) * 0.5) * GH * 0.4;
 		}
-		// ═══ MIRAGE: AI tracks decoy ball ═══
+		// --- MIRAGE: AI tracks decoy ball ---
 		if (g.mirage && g._mirageDecoy && g._mirageDecoy.active) {
 			tgt = g._mirageDecoy.y;
 		}
@@ -4806,13 +4771,28 @@ function update(dt) {
 		const diff = tgt - g.ey;
 		// Dash override
 		let curAiSpd = g.dashT > 0 ? g.dashSpd : g.aiSpd;
-		// ═══ ATTRITION (RALLY DECAY): enemy slows with combo ═══
+		// --- ATTRITION (RALLY DECAY): enemy slows with combo ---
 		if (g.rallyDecay && g.combo > 0) {
 			curAiSpd *= 1 - Math.min(g.combo * 0.03, 0.35);
 		}
-		// ═══ SPIN DRAG: enemy slower with spin returns ═══
+		// --- SPIN DRAG: enemy slower with spin returns ---
 		if (g.spinDrag && g._spinDragMul < 1) {
 			curAiSpd *= g._spinDragMul;
+		}
+		// --- SPEED DEGRADATION: AI struggles past base ball speed ---
+		const spdRatio = g.ballSpd / (g.bs || BASE_SPD);
+		if (spdRatio > 1.0) {
+			const penalty = 1 - Math.min((spdRatio - 1.0) * 0.5, 0.65);
+			curAiSpd *= penalty;
+		}
+		// --- CURVEBALL WEAKNESS: spin tanks both speed and reaction ---
+		if (Math.abs(g.spin) > 15) {
+			const spinStr = Math.min(Math.abs(g.spin) / 200, 0.6);
+			curAiSpd *= (1 - spinStr);
+			// Reduce effective lerp toward target (sluggish tracking)
+			const reactPenalty = 1 - spinStr * 0.7;
+			const diff2 = tgt - g.ey;
+			tgt = g.ey + diff2 * reactPenalty;
 		}
 		// Dead zone prevents micro-jitter when near target
 		if (Math.abs(diff) > 2 && g.concussStunT <= 0) {
@@ -4842,7 +4822,7 @@ function update(dt) {
 		}
 	}
 
-	// ═══ ENEMY ABILITY SYSTEM ═══
+	// --- ENEMY ABILITY SYSTEM ---
 	const nullSuppressed = g.nullField && g._nullActiveT > 0;
 	if (g.eAbil.id !== "none" && (g.freezeT || 0) <= 0 && !nullSuppressed) {
 		// Cooldown tick
@@ -4878,7 +4858,7 @@ function update(dt) {
 		}
 		if (g.overdriveT > 0) {
 			g.overdriveT -= dt;
-			g.ballSpd = g.rallyBase * 2;
+			g.ballSpd = g.rallyBase * 1.5;
 			if (g.overdriveT <= 0) g.ballSpd = g.rallyBase;
 		}
 		if (g.cloneT > 0 || g.foolClone) {
@@ -5097,7 +5077,7 @@ function update(dt) {
 			}
 		}
 
-		// ── AI DECIDES WHEN TO USE ABILITY ──
+		// AI ability usage timing
 		// Warden special: thunderstorm
 		if (g.cfg.enemy.id === "warden") {
 			if (!g.wStormActive) {
@@ -5331,7 +5311,7 @@ function ricoB(gg) {
 	gg.rallyBase = n;
 }
 
-// ═══ DRAW ═══
+// --- DRAW ---
 let _sp = null;
 function getSP(ctx) {
 	if (_sp) return _sp;
@@ -5422,10 +5402,10 @@ function draw(ctx, cw, ch) {
 			ctx.fillStyle = "#8890a0";
 			ctx.font = '13px "Share Tech Mono",monospace';
 			ctx.fillText("PRESS ANY KEY TO START", GW / 2, GH / 2 + 48);
-			ctx.globalAlpha = 0.3 * ia;
-			ctx.fillStyle = "#667";
-			ctx.font = '11px "Share Tech Mono",monospace';
-			ctx.fillText("ESC TO SKIP", GW / 2, GH / 2 + 72);
+			ctx.globalAlpha = 0.7 * ia;
+			ctx.fillStyle = "#aab";
+			ctx.font = 'bold 13px "Share Tech Mono",monospace';
+			ctx.fillText("[ESC] SKIP TUTORIAL", GW / 2, GH / 2 + 72);
 			ctx.globalAlpha = 1;
 			ctx.restore();
 		}
@@ -6338,7 +6318,7 @@ function draw(ctx, cw, ch) {
 	ctx.shadowBlur = 0;
 	ctx.globalAlpha = 1;
 
-	// ══ ABILITY VFX ══
+	// --- ABILITY VFX ---
 	// Curve active: spiral particles swirling around ball
 	if (g.curveNext) {
 		for (let i = 0; i < 6; i++) {
@@ -6591,7 +6571,7 @@ function draw(ctx, cw, ch) {
 		ctx.globalAlpha = 1;
 	}
 
-	// ══ NEW PADDLE ABILITY VFX ══
+	// --- NEW PADDLE ABILITY VFX ---
 	// Oracle active ability: strong projected path preview
 	if (g.foresightT > 0) {
 		const fa = Math.min(g.foresightT, 1);
@@ -6688,10 +6668,12 @@ function draw(ctx, cw, ch) {
 				vx = g.ltLaunchVx;
 				vy = g.ltLaunchVy;
 			}
-			ctx.globalAlpha = 0.2;
-			ctx.strokeStyle = "#88dfff";
-			ctx.lineWidth = 1;
-			ctx.setLineDash([4, 4]);
+			ctx.globalAlpha = 0.38;
+			ctx.strokeStyle = "#55eeff";
+			ctx.lineWidth = 2;
+			ctx.shadowColor = "rgba(85,238,255,0.5)";
+			ctx.shadowBlur = 6;
+			ctx.setLineDash([5, 3]);
 			ctx.beginPath();
 			ctx.moveTo(px, py);
 			let osSpin = g.spin;
@@ -6699,7 +6681,7 @@ function draw(ctx, cw, ch) {
 			let osSpinDir = g._spinDir || 0;
 			let osCurveNext = g.curveNext;
 			const osDt = 0.005;
-			for (let i = 0; i < 450; i++) {
+			for (let i = 0; i < 800; i++) {
 				if (osSpinCurveT > 0) {
 					osSpinCurveT -= osDt;
 					vy += osSpinDir * 280 * (osSpinCurveT / 0.7) * osDt;
@@ -6729,10 +6711,11 @@ function draw(ctx, cw, ch) {
 			}
 			ctx.stroke();
 			ctx.setLineDash([]);
+			ctx.shadowBlur = 0;
 			ctx.globalAlpha = 1;
 		}
 	}
-	// Gravity well (Void) - visible swirling well
+	// Gravity well (Void) - visible swirling well (for DEAD ZONE upgrade)
 	if (g.gravWell && g.gravWellT > 0) {
 		const ga = Math.min(g.gravWellT, 0.5) * 2;
 		const gw = g.gravWell;
@@ -6768,6 +6751,29 @@ function draw(ctx, cw, ch) {
 		ctx.lineTo(gw.x, gw.y);
 		ctx.stroke();
 		ctx.setLineDash([]);
+		ctx.shadowBlur = 0;
+		ctx.globalAlpha = 1;
+	}
+	// Warp field indicator (Void) - swirling rings around ball
+	if (g.warpFieldT > 0) {
+		const wa = Math.min(g.warpFieldT, 0.5) * 2;
+		const pulse = 0.5 + 0.5 * Math.sin(g.t * 8);
+		ctx.globalAlpha = wa * 0.25;
+		ctx.strokeStyle = "#ff44aa";
+		ctx.lineWidth = 1.5;
+		ctx.shadowColor = "rgba(255,68,170,0.6)";
+		ctx.shadowBlur = 10;
+		for (let i = 0; i < 3; i++) {
+			const r = BALL_SZ + 5 + i * 8 + Math.sin(g.t * 6 + i * 2.1) * 3;
+			ctx.beginPath();
+			ctx.arc(g.bx, g.by, r, g.t * (4 - i) + i, g.t * (4 - i) + i + Math.PI * 1.2);
+			ctx.stroke();
+		}
+		ctx.globalAlpha = wa * 0.15 * pulse;
+		ctx.fillStyle = "#ff44aa";
+		ctx.beginPath();
+		ctx.arc(g.bx, g.by, BALL_SZ + 3, 0, Math.PI * 2);
+		ctx.fill();
 		ctx.shadowBlur = 0;
 		ctx.globalAlpha = 1;
 	}
@@ -6873,7 +6879,7 @@ function draw(ctx, cw, ch) {
 	}
 	ctx.globalAlpha = 1;
 
-	// ══ ENEMY ABILITY VFX ══
+	// --- ENEMY ABILITY VFX ---
 	// Dash: fading afterimage ghost copies of enemy paddle
 	if (g.dashT > 0) {
 		const da = Math.min(g.dashT / 0.3, 1);
@@ -7673,7 +7679,7 @@ function draw(ctx, cw, ch) {
 		ctx.globalAlpha = 1;
 	}
 
-	// ══ TUTORIAL OVERLAY ══
+	// --- TUTORIAL OVERLAY ---
 	if (tut && tut.active) {
 		const step = tutStep();
 
@@ -7863,10 +7869,10 @@ function draw(ctx, cw, ch) {
 			dy += 14 + 8;
 
 			// ESC skip
-			ctx.globalAlpha = 0.3 * oa;
-			ctx.fillStyle = "#667";
-			ctx.font = '10px "Share Tech Mono",monospace';
-			ctx.fillText("ESC TO SKIP", GW / 2, dy);
+			ctx.globalAlpha = 0.6 * oa;
+			ctx.fillStyle = "#aab";
+			ctx.font = 'bold 12px "Share Tech Mono",monospace';
+			ctx.fillText("[ESC] SKIP TUTORIAL", GW / 2, dy);
 
 			ctx.globalAlpha = 1;
 		}
@@ -7943,12 +7949,12 @@ function draw(ctx, cw, ch) {
 		}
 		// Persistent skip hint (bottom-right, always visible during tutorial gameplay)
 		if (tut.phase === "wait" || tut.phase === "active" || tut.phase === "check") {
-			ctx.globalAlpha = 0.28;
-			ctx.fillStyle = "#667";
-			ctx.font = '11px "Share Tech Mono",monospace';
+			ctx.globalAlpha = 0.5;
+			ctx.fillStyle = "#aab";
+			ctx.font = 'bold 12px "Share Tech Mono",monospace';
 			ctx.textAlign = "right";
 			ctx.textBaseline = "bottom";
-			ctx.fillText("ESC  SKIP TUTORIAL", GW - 12, GH - 10);
+			ctx.fillText("[ESC] SKIP TUTORIAL", GW - 12, GH - 10);
 			ctx.globalAlpha = 1;
 		}
 		// Completion flash
@@ -7996,7 +8002,7 @@ function draw(ctx, cw, ch) {
 	ctx.restore();
 }
 
-// ═══ SCREEN MANAGEMENT ═══
+// --- SCREEN MANAGEMENT ---
 const $ = (id) => document.getElementById(id);
 function showScreen(id) {
 	stopCardPhysics();
@@ -8089,19 +8095,34 @@ function doAbility() {
 				addSparks(g, g.bx, g.by, 22, 145, [0.78, 0.7, 1]);
 				break;
 			}
-			case "inferno":
-				g.phaseNext = true;
-				g.phaseT = 3.5;
+			case "inferno": {
+				// Shadow Strike: blink ball forward + speed burst
+				const prevX = g.bx, prevY = g.by;
+				const blinkDist = 140;
+				const heading = Math.atan2(g.bvy, g.bvx);
+				const newX = clamp(g.bx + Math.cos(heading) * blinkDist, 30, GW - 30);
+				const newY = clamp(g.by + Math.sin(heading) * blinkDist, 20, GH - 20);
+				g.bx = newX;
+				g.by = newY;
+				// Speed burst (temporary — normalization lerp handles decay)
+				const burst = 1.35;
+				g.bvx *= burst;
+				g.bvy *= burst;
+				// Ghost visual briefly
+				g.ghostBall = true;
+				g.ghostT = 0.5;
 				g.abCD = cd;
 				SFX.abil();
 				tone(600, 0.06, "sine", 0.04);
 				tone(900, 0.08, "sine", 0.03, 20);
-				g.abilFlash = 0.35;
-				g.shake = 0.06;
-				g.flash = 0.15;
+				g.abilFlash = 0.4;
+				g.shake = 0.1;
+				g.flash = 0.2;
 				g.flashCol = [0.8, 0.53, 1];
-				addSparks(g, g.px + PAD_W, g.py, 14, 100, [0.8, 0.53, 1]);
+				addSparks(g, prevX, prevY, 12, 90, [0.8, 0.53, 1]);
+				addSparks(g, newX, newY, 16, 110, [0.8, 0.53, 1]);
 				break;
+			}
 			case "frost":
 				g.blizzardT = 2.3;
 				g.freezeT = Math.max(g.freezeT, 0.25);
@@ -8116,33 +8137,43 @@ function doAbility() {
 				g.flash = 0.25;
 				g.flashCol = [0.53, 0.8, 1];
 				break;
-			case "storm":
-				g.thunderNext = true;
+			case "storm": {
+				// Fire a lightning bolt immediately from the paddle
+				const bSpd = Math.max(g.ballSpd, BASE_SPD) * 1.6;
+				const aimY = g.ey - g.py;
+				const aimDist = Math.hypot(GW, aimY);
+				g.bolts.push({
+					x: g.px + PAD_W,
+					y: g.py,
+					vx: bSpd,
+					vy: (aimY / aimDist) * bSpd * 0.3 + rng(-60, 60),
+					life: 4,
+					trail: [],
+					zig: 0.12,
+					target: "enemy",
+				});
+				if (g.bolts.length > MAX_BOLTS)
+					g.bolts.splice(0, g.bolts.length - MAX_BOLTS);
 				g.abCD = cd;
 				SFX.abil();
 				tone(100, 0.1, "sawtooth", 0.05);
 				tone(200, 0.08, "square", 0.04, 40);
 				g.abilFlash = 0.35;
-				g.shake = 0.08;
-				addSparks(g, g.px, g.py, 12, 120, [1, 0.93, 0.27]);
+				g.shake = 0.1;
+				g.flash = 0.18;
+				g.flashCol = [1, 0.93, 0.27];
+				addSparks(g, g.px + PAD_W, g.py, 14, 120, [1, 0.93, 0.27]);
 				break;
+			}
 			case "voidp": {
-				// Place gravity well ahead of ball in its path
-				const wellDist = 150;
-				const wellX = clamp(g.bx + Math.sign(g.bvx) * wellDist, 60, GW - 60);
-				const wellY = clamp(
-					g.by + (g.bvy / Math.abs(g.bvx || 1)) * wellDist,
-					40,
-					GH - 40,
-				);
-				g.gravWell = { x: wellX, y: wellY };
-				g.gravWellT = 3;
+				// Warp field: ball curves hard toward enemy gaps for 3s
+				g.warpFieldT = 3.0;
 				g.abCD = cd;
 				g.abilFlash = 0.45;
 				SFX.abil();
 				tone(80, 0.2, "sine", 0.06);
 				tone(120, 0.15, "sine", 0.04, 60);
-				addSparks(g, wellX, wellY, 16, 100, [1, 0.27, 0.67]);
+				addSparks(g, g.bx, g.by, 16, 100, [1, 0.27, 0.67]);
 				g.shake = 0.08;
 				g.flash = 0.15;
 				g.flashCol = [1, 0.27, 0.67];
@@ -8213,7 +8244,7 @@ function handleContinue() {
 	}
 }
 
-// ═══ CARD AURA PARTICLES ═══
+// --- CARD AURA PARTICLES ---
 function _perimPos() {
 	const side = Math.random();
 	if (side < 0.25) return { x: Math.random()*100+"%", y: "100%" };
@@ -8263,7 +8294,7 @@ function spawnCardAura(card, color, effectType) {
 	const fx = effectType || "generic";
 
 	if (fx === "storm") {
-		// ═══ STORM: lightning crackles + yellow sparks ═══
+		// --- STORM: lightning crackles + yellow sparks ---
 		for (let i = 0; i < 5; i++) _mkCrackle(cont, color, { w: 25+Math.random()*35, dur: 0.15+Math.random()*0.25, delay: Math.random()*0.5 });
 		for (let i = 0; i < 8; i++) _mkSpark(cont, color, { sy: -30-Math.random()*60, sx: -25+Math.random()*50, dur: 0.3+Math.random()*0.5, size: 2+Math.random()*4 });
 		for (let i = 0; i < 3; i++) _mkSpark(cont, color, { orbit: 20+Math.random()*35, dur: 0.8+Math.random()*0.6, size: 3+Math.random()*3 });
@@ -8277,7 +8308,7 @@ function spawnCardAura(card, color, effectType) {
 		}, 140);
 
 	} else if (fx === "frost") {
-		// ═══ FROST: slow-falling ice crystals, pale blue mist ═══
+		// --- FROST: slow-falling ice crystals, pale blue mist ---
 		for (let i = 0; i < 10; i++) _mkSpark(cont, color, { sy: 15+Math.random()*30, sx: -8+Math.random()*16, dur: 1.5+Math.random()*1.5, size: 1.5+Math.random()*3, col: i%3===0 ? "#ccefff" : color });
 		for (let i = 0; i < 3; i++) _mkSpark(cont, color, { orbit: 25+Math.random()*40, dur: 3+Math.random()*2, size: 2+Math.random()*2, col: "#ddf4ff" });
 		card._auraInterval = setInterval(() => {
@@ -8289,7 +8320,7 @@ function spawnCardAura(card, color, effectType) {
 		}, 260);
 
 	} else if (fx === "inferno") {
-		// ═══ INFERNO: upward fire embers, orange + magenta ═══
+		// --- INFERNO: upward fire embers, orange + magenta ---
 		const fireCols = ["#ff6622", "#ff44cc", "#ffaa22", color];
 		for (let i = 0; i < 10; i++) { const fc = fireCols[i % fireCols.length]; _mkSpark(cont, color, { sy: -35-Math.random()*55, sx: -15+Math.random()*30, dur: 0.4+Math.random()*0.6, size: 2+Math.random()*4, col: fc }); }
 		for (let i = 0; i < 2; i++) _mkCrackle(cont, color, { w: 10+Math.random()*15, dur: 0.4+Math.random()*0.4, col: "#ff6622" });
@@ -8302,7 +8333,7 @@ function spawnCardAura(card, color, effectType) {
 		}, 150);
 
 	} else if (fx === "oracle") {
-		// ═══ ORACLE: flowing cyan streams, smooth rings ═══
+		// --- ORACLE: flowing cyan streams, smooth rings ---
 		for (let i = 0; i < 6; i++) _mkSpark(cont, color, { sy: -15-Math.random()*30, sx: -10+Math.random()*20, dur: 1+Math.random()*1.2, size: 2+Math.random()*2.5, col: i%2===0 ? "#66eeff" : color });
 		for (let i = 0; i < 4; i++) _mkSpark(cont, color, { orbit: 22+Math.random()*45, dur: 2+Math.random()*2, size: 2+Math.random()*2, col: "#88ffff" });
 		card._auraInterval = setInterval(() => {
@@ -8314,7 +8345,7 @@ function spawnCardAura(card, color, effectType) {
 		}, 240);
 
 	} else if (fx === "paradox") {
-		// ═══ PARADOX: swirling vortex, purple time-warp ═══
+		// --- PARADOX: swirling vortex, purple time-warp ---
 		for (let i = 0; i < 5; i++) _mkSpark(cont, color, { orbit: 15+Math.random()*50, dur: 0.8+Math.random()*1, size: 2+Math.random()*3, col: i%2===0 ? "#dda8ff" : color });
 		for (let i = 0; i < 7; i++) _mkSpark(cont, color, { sy: -20-Math.random()*40, sx: -20+Math.random()*40, dur: 0.5+Math.random()*0.7, size: 1.5+Math.random()*3, col: i%3===0 ? "#e0c0ff" : color });
 		for (let i = 0; i < 2; i++) _mkCrackle(cont, color, { w: 15+Math.random()*20, dur: 0.5+Math.random()*0.5, col: "#dda8ff" });
@@ -8328,7 +8359,7 @@ function spawnCardAura(card, color, effectType) {
 		}, 160);
 
 	} else if (fx === "voidp") {
-		// ═══ VOID: inward-pulling gravity particles, pink/magenta ═══
+		// --- VOID: inward-pulling gravity particles, pink/magenta ---
 		for (let i = 0; i < 8; i++) _mkSpark(cont, color, { sy: 10+Math.random()*20, sx: -5+Math.random()*10, dur: 0.8+Math.random()*1, size: 2+Math.random()*3, col: i%3===0 ? "#ff88cc" : color });
 		for (let i = 0; i < 3; i++) _mkSpark(cont, color, { orbit: 30+Math.random()*40, dur: 1.5+Math.random()*1, size: 2.5+Math.random()*2, col: "#ff66bb" });
 		for (let i = 0; i < 1; i++) _mkCrackle(cont, color, { w: 18+Math.random()*18, dur: 0.6+Math.random()*0.4, col: "#ff88cc" });
@@ -8341,7 +8372,7 @@ function spawnCardAura(card, color, effectType) {
 		}, 200);
 
 	} else if (fx === "classic") {
-		// ═══ CLASSIC: clean minimal white sparks ═══
+		// --- CLASSIC: clean minimal white sparks ---
 		for (let i = 0; i < 5; i++) _mkSpark(cont, color, { sy: -15-Math.random()*25, sx: -10+Math.random()*20, dur: 0.8+Math.random()*1, size: 1.5+Math.random()*2 });
 		for (let i = 0; i < 2; i++) _mkSpark(cont, color, { orbit: 20+Math.random()*25, dur: 2+Math.random()*1.5, size: 1.5+Math.random()*1.5 });
 		card._auraInterval = setInterval(() => {
@@ -8352,7 +8383,7 @@ function spawnCardAura(card, color, effectType) {
 		}, 300);
 
 	} else {
-		// ═══ GENERIC: balanced default for upgrade cards ═══
+		// --- GENERIC: balanced default for upgrade cards ---
 		for (let i = 0; i < 6; i++) _mkSpark(cont, color, {});
 		for (let i = 0; i < 2; i++) _mkSpark(cont, color, { orbit: 18+Math.random()*30, dur: 1.5+Math.random()*1.5, size: 2+Math.random()*2 });
 		for (let i = 0; i < 2; i++) _mkCrackle(cont, color, {});
@@ -8370,7 +8401,7 @@ function clearCardAura(card) {
 	if (p) p.remove();
 }
 
-// ═══ CARD PHYSICS: Float, Wiggle, Magnetic Repulsion ═══
+// --- CARD PHYSICS: Float, Wiggle, Magnetic Repulsion ---
 let _cardPhysRAF = null;
 let _cardPhysCards = [];
 let _cardPhysStart = 0;
@@ -8511,7 +8542,7 @@ function stopCardPhysics() {
 	_cardPhysCards = [];
 }
 
-// ═══ BUILD UI ═══
+// --- BUILD UI ---
 function updateSkipTutBtn() {
 	const btn = $("skip-tut-btn");
 	if (btn) btn.style.display = _tutorialDone ? "none" : "block";
@@ -8660,7 +8691,7 @@ function showGameOver() {
 	showScreen("go-screen");
 }
 
-// ═══ OPPONENT SELECTION ═══
+// --- OPPONENT SELECTION ---
 function generateOpponents(wv) {
 	const baseRankIdx = Math.min(Math.floor(wv / 1.5), DIFF_RANKS.length - 1);
 	const opponents = [];
@@ -8672,15 +8703,8 @@ function generateOpponents(wv) {
 	const easyPool = getEnemiesForDiff(easyDiff);
 	const easyEnemy =
 		easyPool[Math.floor(Math.random() * easyPool.length)] || ENEMIES[0];
-	let eAiSpd, eReact;
-	if (easyRank >= 5) {
-		eAiSpd = 240 + wv * 20;
-		eReact = clamp(0.04 + wv * 0.02, 0, 0.35);
-	} // A+
-	else {
-		eAiSpd = 130 + wv * 8;
-		eReact = clamp(0.01 + wv * 0.01, 0, 0.14);
-	} // below A
+	const eAiSpd = 145 + wv * 14;
+	const eReact = clamp(0.06 + wv * 0.025, 0, 0.85);
 	const eEH = BASE_PAD_H;
 	const easyCfg = {
 		wv,
@@ -8696,7 +8720,6 @@ function generateOpponents(wv) {
 		jitter: false,
 	};
 	easyEnemy.mod(easyCfg);
-	softenLowRankAi(easyCfg);
 	opponents.push({ cfg: easyCfg, label: "EASY", labelCol: "#4a7" });
 
 	if (foolEligible) {
@@ -8728,17 +8751,8 @@ function generateOpponents(wv) {
 	const normEnemy =
 		normPool[Math.floor(Math.random() * normPool.length)] ||
 		ENEMIES[Math.min(baseRankIdx, ENEMIES.length - 1)];
-	// Below A rank: slow and dumb. A+ keeps real stats.
-	const normRankIdx = DIFF_RANKS.indexOf(normDiff);
-	let nAiSpd, nReact;
-	if (normRankIdx >= 5) {
-		// A rank index=5
-		nAiSpd = 260 + wv * 30 + (normBoss ? 80 : 0);
-		nReact = clamp(0.25 + wv * 0.07 + (normBoss ? 0.15 : 0), 0, 0.96);
-	} else {
-		nAiSpd = 125 + wv * 9 + (normBoss ? 18 : 0);
-		nReact = clamp(0.01 + wv * 0.01 + (normBoss ? 0.02 : 0), 0, 0.14);
-	}
+	const nAiSpd = 160 + wv * 18 + (normBoss ? 30 : 0);
+	const nReact = clamp(0.08 + wv * 0.035 + (normBoss ? 0.06 : 0), 0, 0.9);
 	const nEH = BASE_PAD_H;
 	const normCfg = {
 		wv,
@@ -8754,7 +8768,6 @@ function generateOpponents(wv) {
 		jitter: false,
 	};
 	normEnemy.mod(normCfg);
-	softenLowRankAi(normCfg);
 	opponents.push({ cfg: normCfg, label: "NORMAL", labelCol: "#77a" });
 
 	// HARD: two ranks above, frequent boss
@@ -8765,15 +8778,8 @@ function generateOpponents(wv) {
 	const hardEnemy =
 		hardPool[Math.floor(Math.random() * hardPool.length)] ||
 		ENEMIES[Math.min(hardRank * 2, ENEMIES.length - 1)];
-	let hAiSpd, hReact;
-	if (hardRank >= 5) {
-		// A rank+
-		hAiSpd = 280 + wv * 35 + (hardBoss ? 100 : 0);
-		hReact = clamp(0.3 + wv * 0.08 + (hardBoss ? 0.2 : 0), 0, 0.97);
-	} else {
-		hAiSpd = 140 + wv * 10 + (hardBoss ? 20 : 0);
-		hReact = clamp(0.012 + wv * 0.011 + (hardBoss ? 0.022 : 0), 0, 0.16);
-	}
+	const hAiSpd = 180 + wv * 22 + (hardBoss ? 40 : 0);
+	const hReact = clamp(0.1 + wv * 0.04 + (hardBoss ? 0.08 : 0), 0, 0.95);
 	const hEH = BASE_PAD_H;
 	const hardCfg = {
 		wv,
@@ -8789,7 +8795,6 @@ function generateOpponents(wv) {
 		jitter: false,
 	};
 	hardEnemy.mod(hardCfg);
-	softenLowRankAi(hardCfg);
 	opponents.push({ cfg: hardCfg, label: "HARD", labelCol: "#d55" });
 
 	return opponents;
@@ -8806,6 +8811,11 @@ function showOpponentSelect() {
 
 	const grid = $("opp-grid");
 	grid.innerHTML = "";
+	// Clean up any lingering tutorial elements
+	const tutTip = document.getElementById("tut-opp-tip");
+	if (tutTip) tutTip.remove();
+	const tutSkip = document.getElementById("tut-skip-btn");
+	if (tutSkip) tutSkip.remove();
 
 	opps.forEach(({ cfg, label, labelCol }, oppIdx) => {
 		const dc = DIFF_COLORS[cfg.diff] || "#fff";
@@ -8915,13 +8925,23 @@ function showVictory() {
 	showScreen("vic-screen");
 }
 
-// ═══ INPUT ═══
+// --- INPUT ---
 window.addEventListener("keydown", (e) => {
 	const k = e.key.toLowerCase();
 	// Tutorial input handling
 	if (tut && tut.active) {
 		if (k === "escape") {
-			skipTutorial();
+			if (tut.phase === "intro") {
+				skipTutorial();
+				return;
+			}
+			// During tutorial gameplay, show pause menu with skip option (never unpause via ESC)
+			if (!paused) {
+				paused = true;
+				$("pause-overlay").classList.remove("hidden");
+				const skipBtn = $("pause-skip-tut");
+				if (skipBtn) skipBtn.style.display = "inline-block";
+			}
 			return;
 		}
 		if (tut.phase === "intro" || tut.phase === "overlay") {
@@ -8945,8 +8965,12 @@ window.addEventListener("keydown", (e) => {
 		if (curScreen === null && g && !g.done) {
 			paused = !paused;
 			$("pause-overlay").classList.toggle("hidden", !paused);
+		} else if (curScreen === "opp-screen" || curScreen === "cards-screen") {
+			paused = true;
+			$("pause-overlay").classList.remove("hidden");
 		} else if (curScreen === "dev-screen") {
 			showScreen("menu-screen");
+			buildPadGrid();
 		}
 	}
 	keysDown[k] = true;
@@ -8992,6 +9016,8 @@ $("vic-again").onclick = () => {
 $("pause-resume").onclick = () => {
 	paused = false;
 	$("pause-overlay").classList.add("hidden");
+	const skipBtn = $("pause-skip-tut");
+	if (skipBtn) skipBtn.style.display = "none";
 };
 $("pause-menu").onclick = () => {
 	paused = false;
@@ -9004,8 +9030,14 @@ $("pause-menu").onclick = () => {
 	if (tut) { tut = null; }
 	showScreen("menu-screen");
 };
+$("pause-skip-tut").onclick = () => {
+	paused = false;
+	$("pause-overlay").classList.add("hidden");
+	$("pause-skip-tut").style.display = "none";
+	skipTutorial();
+};
 
-// ═══ DEV MODE ═══
+// --- DEV MODE ---
 let devPad = "classic",
 	devEnemy = "basic",
 	devBoss = false,
@@ -9103,7 +9135,7 @@ window.showDevScreen = function showDevScreen() {
 	// Build paddle selector
 	const pg = $("dev-pad-grid");
 	pg.innerHTML =
-		'<div id="dev-pad-list" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow:auto;padding-right:4px;"></div>';
+		'<div id="dev-pad-list" style="display:flex;flex-direction:column;gap:8px;padding-right:4px;"></div>';
 	const padList = pg.querySelector("#dev-pad-list");
 	const devPaddles = [
 		...PADDLES,
@@ -9120,7 +9152,7 @@ window.showDevScreen = function showDevScreen() {
 		const pc = c || { p: "#d8d2ff" };
 		const d = document.createElement("div");
 		d.style.cssText = `padding:12px 14px;cursor:pointer;border:1px solid ${devPad === p.id ? pc.p : "#3a3a46"};border-radius:4px;background:${devPad === p.id ? "rgba(255,255,255,0.06)" : "#050508"};display:flex;align-items:center;gap:12px;transition:all 0.15s;box-shadow:${devPad === p.id ? `0 0 0 1px ${pc.p}66` : "0 0 0 1px rgba(255,255,255,0.03) inset"};`;
-		d.innerHTML = `<div style="width:8px;height:8px;border-radius:50%;background:${pc.p};box-shadow:0 0 10px ${pc.p};flex-shrink:0;"></div><div><div style="font-size:11px;font-weight:700;letter-spacing:3px;color:${devPad === p.id ? pc.p : "#bbb"}">${p.name}</div><div style="font-size:8px;color:#887;letter-spacing:2px;margin-top:3px;">[Q] ${p.abil}</div><div style="font-size:7px;color:#666;letter-spacing:1.4px;margin-top:2px;">${p.ainfo}</div></div>`;
+		d.innerHTML = `<div style="width:8px;height:8px;border-radius:50%;background:${pc.p};box-shadow:0 0 10px ${pc.p};flex-shrink:0;"></div><div><div style="font-size:12px;font-weight:700;letter-spacing:3px;color:${devPad === p.id ? pc.p : "#ddd"}">${p.name}</div><div style="font-size:9px;color:#cca;letter-spacing:2px;margin-top:3px;">[Q] ${p.abil}</div><div style="font-size:8px;color:#aaa;letter-spacing:1.4px;margin-top:2px;">${p.ainfo}</div></div>`;
 		d.onclick = () => {
 			devPad = p.id;
 			SFX.sel();
@@ -9148,7 +9180,7 @@ window.showDevScreen = function showDevScreen() {
 		"padding:10px 12px;border:1px solid #40404f;border-radius:4px;background:#050508;box-shadow:0 0 0 1px rgba(255,255,255,0.06) inset;";
 	const cards = getDevAbilityCards();
 	const count = devAbilityIds.size;
-	abWrap.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="font-size:10px;font-weight:700;letter-spacing:3px;color:#999;">ABILITIES (${count})</div><div id="dev-abil-clear" style="font-size:8px;letter-spacing:2px;color:#a66;cursor:pointer;">CLEAR</div></div><div id="dev-abil-list" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:auto;padding-right:4px;"></div>`;
+	abWrap.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="font-size:11px;font-weight:700;letter-spacing:3px;color:#ddd;">ABILITIES (${count})</div><div id="dev-abil-clear" style="font-size:9px;letter-spacing:2px;color:#f88;cursor:pointer;">CLEAR</div></div><div id="dev-abil-list" style="display:flex;flex-direction:column;gap:6px;padding-right:4px;"></div>`;
 	eg.appendChild(abWrap);
 
 	const abList = abWrap.querySelector("#dev-abil-list");
@@ -9175,7 +9207,7 @@ window.showDevScreen = function showDevScreen() {
 		const tc = TIER_COLORS[c.tier] || "#aaa";
 		const row = document.createElement("div");
 		row.style.cssText = `padding:9px 10px;cursor:pointer;border:1px solid ${sel ? tc : "#3a3a46"};border-radius:4px;background:${sel ? "rgba(255,255,255,0.06)" : "#050508"};display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:${sel ? `0 0 0 1px ${tc}66` : "0 0 0 1px rgba(255,255,255,0.03) inset"};`;
-		row.innerHTML = `<div style="display:flex;flex-direction:column;align-items:flex-start;"><div style="font-size:9px;letter-spacing:2px;color:${sel ? "#ddd" : "#888"};">${c.name}</div><div style="font-size:9px;letter-spacing:1px;color:${sel ? "#ccc" : "#999"};">${c.desc}</div></div><div style="font-size:12px;color:${tc};">${sel ? "●" : "○"}</div>`;
+		row.innerHTML = `<div style="display:flex;flex-direction:column;align-items:flex-start;"><div style="font-size:10px;letter-spacing:2px;color:${sel ? "#eee" : "#ccc"};">${c.name}</div><div style="font-size:9px;letter-spacing:1px;color:${sel ? "#ddd" : "#aaa"};">${c.desc}</div></div><div style="font-size:12px;color:${tc};">${sel ? "●" : "○"}</div>`;
 		row.onclick = () => {
 			devAbilityScrollTop = abList.scrollTop;
 			devScreenScrollTop = devScreenEl
@@ -9196,7 +9228,7 @@ window.showDevScreen = function showDevScreen() {
 	enemyWrap.style.cssText =
 		"padding:10px 12px;border:1px solid #40404f;border-radius:4px;background:#050508;box-shadow:0 0 0 1px rgba(255,255,255,0.06) inset;";
 	enemyWrap.innerHTML =
-		'<div id="dev-enemy-list" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;padding-right:4px;"></div>';
+		'<div id="dev-enemy-list" style="display:flex;flex-direction:column;gap:8px;padding-right:4px;"></div>';
 	opts.appendChild(enemyWrap);
 	const enemyList = enemyWrap.querySelector("#dev-enemy-list");
 	let lastDiff = "";
@@ -9217,7 +9249,7 @@ window.showDevScreen = function showDevScreen() {
 		const auraGlow =
 			e.id === "thefool" ? "rgba(230,220,255,0.35)" : "rgba(255,255,255,0.03)";
 		d.style.cssText = `padding:10px 12px;cursor:pointer;border:1px solid ${sel ? auraBorder : "#3a3a46"};border-radius:4px;background:${sel ? auraGlow : "#050508"};display:flex;align-items:center;gap:10px;transition:all 0.15s;box-shadow:${sel ? `0 0 0 1px ${auraBorder}66` : "0 0 0 1px rgba(255,255,255,0.03) inset"};`;
-		d.innerHTML = `<div style="font-size:10px;font-weight:900;color:${dc};width:52px;text-align:center;letter-spacing:1px;">${e.diff}</div><div style="flex:1;"><div style="font-size:10px;font-weight:700;letter-spacing:2px;color:${sel ? "#eee" : "#999"}">${e.name} <span style="color:#665;font-size:7px;">${e.tag}</span></div>${eab.id !== "none" ? `<div style="font-size:7px;color:#a66;letter-spacing:1.5px;margin-top:2px;">${eab.icon} ${eab.name}</div>` : ""}</div>`;
+		d.innerHTML = `<div style="font-size:11px;font-weight:900;color:${dc};width:52px;text-align:center;letter-spacing:1px;">${e.diff}</div><div style="flex:1;"><div style="font-size:11px;font-weight:700;letter-spacing:2px;color:${sel ? "#fff" : "#ccc"}">${e.name} <span style="color:#aa9;font-size:8px;">${e.tag}</span></div>${eab.id !== "none" ? `<div style="font-size:8px;color:#f88;letter-spacing:1.5px;margin-top:2px;">${eab.icon} ${eab.name}</div>` : ""}</div>`;
 		d.onclick = () => {
 			devEnemy = e.id;
 			SFX.sel();
@@ -9242,12 +9274,12 @@ window.showDevScreen = function showDevScreen() {
 	stageWrap.style.cssText =
 		"padding:10px 12px;border:1px solid #40404f;border-radius:4px;background:#050508;margin-top:6px;box-shadow:0 0 0 1px rgba(255,255,255,0.06) inset;";
 	stageWrap.innerHTML =
-		'<div style="font-size:11px;font-weight:900;letter-spacing:4px;color:#999;margin-bottom:8px;">STAGE / WAVE</div>';
+		'<div style="font-size:12px;font-weight:900;letter-spacing:4px;color:#ddd;margin-bottom:8px;">STAGE / WAVE</div>';
 	opts.appendChild(stageWrap);
 	// Boss toggle
 	const bossD = document.createElement("div");
 	bossD.style.cssText = `padding:8px 12px;cursor:pointer;border:1px solid ${devBoss ? "#f66" : "#3a3a46"};border-radius:3px;background:${devBoss ? "rgba(255,40,40,0.06)" : "#050508"};transition:all 0.15s;box-shadow:${devBoss ? "0 0 0 1px rgba(255,110,110,0.35)" : "0 0 0 1px rgba(255,255,255,0.03) inset"};`;
-	bossD.innerHTML = `<div style="font-size:9px;font-weight:700;letter-spacing:3px;color:${devBoss ? "#f66" : "#666"};">\u2605 BOSS MODE: ${devBoss ? "ON" : "OFF"}</div>`;
+	bossD.innerHTML = `<div style="font-size:10px;font-weight:700;letter-spacing:3px;color:${devBoss ? "#f66" : "#bbb"};">\u2605 BOSS MODE: ${devBoss ? "ON" : "OFF"}</div>`;
 	bossD.onclick = () => {
 		devBoss = !devBoss;
 		SFX.sel();
@@ -9258,7 +9290,7 @@ window.showDevScreen = function showDevScreen() {
 	const wvD = document.createElement("div");
 	wvD.style.cssText =
 		"padding:8px 12px;border:1px solid #3a3a46;border-radius:3px;background:#050508;margin-top:6px;box-shadow:0 0 0 1px rgba(255,255,255,0.03) inset;";
-	wvD.innerHTML = `<div style="font-size:9px;font-weight:700;letter-spacing:3px;color:#999;margin-bottom:6px;">WAVE LEVEL: ${devWave}</div><input type="range" min="1" max="12" value="${devWave}" style="width:100%;accent-color:#f66;" id="dev-wave-slider">`;
+	wvD.innerHTML = `<div style="font-size:10px;font-weight:700;letter-spacing:3px;color:#ddd;margin-bottom:6px;">WAVE LEVEL: ${devWave}</div><input type="range" min="1" max="12" value="${devWave}" style="width:100%;accent-color:#f66;" id="dev-wave-slider">`;
 	stageWrap.appendChild(wvD);
 
 	setTimeout(() => {
@@ -9354,7 +9386,7 @@ $("dev-back").onclick = () => {
 	showScreen("menu-screen");
 };
 
-// ═══ GAME LOOP ═══
+// --- GAME LOOP ---
 const cv = $("cv"),
 	ctx = cv.getContext("2d");
 ctx.imageSmoothingEnabled = false;

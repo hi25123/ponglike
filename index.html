@@ -13,12 +13,12 @@
 
 <div id="menu-screen" class="screen">
   <div style="text-align:center;max-width:920px;padding:0 20px;">
-    <div style="margin-bottom:46px;"><div class="title">PADDLE</div><div class="subtitle">BORN</div></div>
+    <div style="margin-bottom:28px;"><div class="title">PADDLE</div><div class="subtitle">BORN</div></div>
     <div class="slabel">CHOOSE YOUR PADDLE</div>
     <div class="pad-grid" id="pad-grid"></div>
-    <div class="dim" style="margin-top:36px;">W/S MOVE &middot; A/D SHIFT &middot; Q ABILITY &middot; FIRST TO 5 &middot; 12 WAVES &middot; ENEMY UPGRADES TOO</div>
-    <div id="skip-tut-btn" style="margin-top:14px;cursor:pointer;color:#667;font-size:10px;letter-spacing:4px;transition:color 0.2s;" onmouseenter="this.style.color='#aab'" onmouseleave="this.style.color='#667'">SKIP TUTORIAL</div>
-    <div id="dev-btn" style="margin-top:28px;cursor:pointer;display:inline-block;padding:12px 28px;border:1px solid #555;border-radius:3px;color:#fff;font-size:13px;letter-spacing:5px;background:linear-gradient(175deg,#111,#080808);transition:all 0.22s ease;" onmouseenter="this.style.borderColor='#aaa';this.style.background='linear-gradient(175deg,#222,#111)';this.style.boxShadow='0 0 20px rgba(255,255,255,0.08)'" onmouseleave="this.style.borderColor='#555';this.style.background='linear-gradient(175deg,#111,#080808)';this.style.boxShadow='none'" onclick="SFX.sel();showDevScreen();">&#9881; SANDBOX MODE</div>
+    <div class="dim" style="margin-top:22px;">W/S MOVE &middot; A/D SHIFT &middot; Q ABILITY &middot; FIRST TO 5 &middot; 12 WAVES &middot; ENEMY UPGRADES TOO</div>
+    <div id="skip-tut-btn" style="margin-top:10px;cursor:pointer;color:#aab;font-size:11px;letter-spacing:4px;padding:6px 16px;border:1px solid #444;border-radius:3px;display:inline-block;transition:all 0.2s;" onmouseenter="this.style.color='#fff';this.style.borderColor='#888';this.style.textShadow='0 0 8px rgba(255,255,255,0.2)'" onmouseleave="this.style.color='#aab';this.style.borderColor='#444';this.style.textShadow='none'">SKIP TUTORIAL</div>
+    <div id="dev-btn" style="margin-top:18px;cursor:pointer;display:inline-block;padding:8px 20px;border:1px solid #555;border-radius:3px;color:#fff;font-size:11px;letter-spacing:4px;background:linear-gradient(175deg,#111,#080808);transition:all 0.22s ease;" onmouseenter="this.style.borderColor='#aaa';this.style.background='linear-gradient(175deg,#222,#111)';this.style.boxShadow='0 0 20px rgba(255,255,255,0.08)'" onmouseleave="this.style.borderColor='#555';this.style.background='linear-gradient(175deg,#111,#080808)';this.style.boxShadow='none'" onclick="SFX.sel();showDevScreen();">&#9881; SANDBOX MODE</div>
   </div>
 </div>
 
@@ -73,7 +73,7 @@
 <div id="dev-screen" class="screen hidden">
   <div class="dev-shell">
     <div style="font-size:clamp(28px,5vw,42px);letter-spacing:12px;margin-bottom:4px;text-shadow:0 0 18px rgba(255,100,100,0.18);">SANDBOX MODE</div>
-    <div style="color:#fff;font-size:13px;letter-spacing:5px;margin-bottom:16px;">TEST ANY PADDLE vs ANY ENEMY</div>
+    <div style="color:#ddd;font-size:14px;letter-spacing:5px;margin-bottom:16px;">TEST ANY PADDLE vs ANY ENEMY</div>
     <div class="dev-columns">
       <div class="dev-col">
         <div class="dev-head">PADDLES</div>
@@ -99,6 +99,7 @@
     <div style="display:flex;flex-direction:column;gap:10px;align-items:center;">
       <div class="btn" id="pause-resume" style="min-width:180px;">RESUME</div>
       <div class="btn sec" id="pause-menu" style="min-width:180px;">BACK TO MENU</div>
+      <div class="btn sec" id="pause-skip-tut" style="min-width:180px;display:none;color:#ff8888;border-color:#663333;">SKIP TUTORIAL</div>
     </div>
   </div>
 </div>

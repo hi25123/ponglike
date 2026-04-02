@@ -48,7 +48,10 @@ canvas {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	justify-content: center;
+	justify-content: flex-start;
+	overflow-y: auto;
+	padding: 24px 0;
+	scrollbar-width: none;
 	z-index: 50;
 	background:
 		radial-gradient(circle at 20% 12%, rgba(255, 255, 255, 0.035), transparent 40%),
@@ -57,8 +60,15 @@ canvas {
 	transition: opacity 0.4s;
 }
 .screen.hidden {
-	opacity: 0;
-	pointer-events: none;
+	display: none;
+}
+.screen::-webkit-scrollbar {
+	display: none;
+}
+.screen > div {
+	margin-top: auto;
+	margin-bottom: auto;
+	flex-shrink: 0;
 }
 #pause-overlay.hidden {
 	display: none !important;
@@ -68,16 +78,16 @@ canvas {
 	50% { opacity: 0.4; }
 }
 .title {
-	font-size: clamp(48px, 10vw, 90px);
-	letter-spacing: clamp(10px, 3vw, 30px);
+	font-size: clamp(40px, 8vw, 72px);
+	letter-spacing: clamp(9px, 2.8vw, 26px);
 	font-weight: bold;
 	text-shadow:
 		0 0 30px rgba(255, 255, 255, 0.25),
 		0 0 80px rgba(255, 255, 255, 0.08);
 }
 .subtitle {
-	font-size: clamp(14px, 2.4vw, 20px);
-	letter-spacing: clamp(8px, 2vw, 22px);
+	font-size: clamp(15px, 3vw, 26px);
+	letter-spacing: clamp(9px, 2.2vw, 22px);
 	color: #f0f0f0;
 	text-shadow: 0 0 10px rgba(255, 200, 150, 0.12);
 	margin-top: 2px;
@@ -86,15 +96,15 @@ canvas {
 /* Paddle select cards — rough, analog feel */
 .pad-grid {
 	display: flex;
-	gap: 14px;
+	gap: 12px;
 	justify-content: center;
 	flex-wrap: wrap;
-	max-width: 1000px;
+	max-width: 940px;
 	margin: 0 auto;
 }
 .pad-card {
-	width: clamp(155px, 22vw, 200px);
-	padding: 26px 16px 20px;
+	width: clamp(140px, 20vw, 180px);
+	padding: 20px 14px 16px;
 	text-align: center;
 	cursor: pointer;
 	border: 1px solid #1a1a1a;
@@ -144,10 +154,10 @@ canvas {
 		0 0 30px var(--pc);
 }
 .pad-card .pn {
-	font-size: 15px;
+	font-size: 14px;
 	font-weight: 700;
-	letter-spacing: 3px;
-	margin-bottom: 8px;
+	letter-spacing: 2px;
+	margin-bottom: 6px;
 	color: #ddd;
 	transition: all 0.2s;
 }
@@ -157,10 +167,10 @@ canvas {
 }
 .pad-card .pd {
 	color: #f2f2f2;
-	font-size: 13px;
-	line-height: 1.7;
-	margin-bottom: 10px;
-	min-height: 36px;
+	font-size: 12px;
+	line-height: 1.65;
+	margin-bottom: 8px;
+	min-height: 32px;
 }
 .pad-card .ps {
 	border-top: 1px solid #1a1a1a;
@@ -172,7 +182,7 @@ canvas {
 }
 .pad-card .pa {
 	color: #f1f1f1;
-	font-size: 12px;
+	font-size: 11px;
 	letter-spacing: 2px;
 	transition: color 0.2s;
 }
@@ -181,8 +191,8 @@ canvas {
 }
 .pad-card .pi {
 	color: #f3f3f3;
-	font-size: 12px;
-	margin-top: 4px;
+	font-size: 11px;
+	margin-top: 3px;
 }
 .pad-card .pt {
 	color: transparent;
@@ -447,13 +457,13 @@ canvas {
 	margin: 6px 0;
 }
 .btn {
-	padding: 16px 44px;
+	padding: 14px 36px;
 	border: 1px solid #555;
 	border-radius: 3px;
 	color: #fff;
 	cursor: pointer;
-	font-size: 15px;
-	letter-spacing: 6px;
+	font-size: 14px;
+	letter-spacing: 5px;
 	font-family: inherit;
 	background: linear-gradient(175deg, #0c0c0c, #060608);
 	transition: all 0.22s ease;
@@ -469,9 +479,9 @@ canvas {
 .btn.sec {
 	border-color: #333;
 	color: #fff;
-	font-size: 13px;
-	letter-spacing: 4px;
-	padding: 12px 32px;
+	font-size: 12px;
+	letter-spacing: 3px;
+	padding: 11px 28px;
 }
 .btn.sec:hover {
 	background: linear-gradient(175deg, #101010, #080808);
@@ -480,14 +490,14 @@ canvas {
 }
 .dim {
 	color: #fff;
-	font-size: 14px;
-	letter-spacing: 3px;
-	line-height: 2.4;
+	font-size: 13px;
+	letter-spacing: 2px;
+	line-height: 2.3;
 }
 .slabel {
 	color: #fff;
-	font-size: 17px;
-	letter-spacing: 8px;
+	font-size: 15px;
+	letter-spacing: 7px;
 	margin-bottom: 26px;
 	text-shadow: 0 0 12px rgba(255, 255, 255, 0.24);
 }
@@ -496,9 +506,7 @@ canvas {
 .dev-shell {
 	text-align: center;
 	max-width: 960px;
-	padding: 0 16px;
-	max-height: 90vh;
-	overflow-y: auto;
+	padding: 0 16px 20px;
 }
 
 .dev-columns {
@@ -516,8 +524,8 @@ canvas {
 }
 
 .dev-head {
-	color: #fff;
-	font-size: 12px;
+	color: #eee;
+	font-size: 13px;
 	font-weight: 900;
 	letter-spacing: 6px;
 	margin-bottom: 10px;
@@ -528,17 +536,17 @@ canvas {
 	flex-direction: column;
 	color: #fff;
 	gap: 4px;
-	max-height: 330px;
+	max-height: 50vh;
 	overflow-y: auto;
 	padding: 10px;
-	border: 2px solid #ffffff;
+	border: 1px solid #3a3a46;
 	border-radius: 4px;
 	background: transparent;
 	box-shadow: none;
 }
 
 .dev-scroll-box:hover {
-	border-color: #ffffff;
+	border-color: #5a5a6a;
 	background: transparent;
 	box-shadow: none;
 }
@@ -553,13 +561,9 @@ canvas {
 }
 
 .dev-scroll-box::-webkit-scrollbar-thumb {
-	background: rgba(255, 255, 255, 0.75);
+	background: rgba(255, 255, 255, 0.35);
 	border-radius: 8px;
 }
-
-/* ═══════════════════════════════════════════════
-   ANIMATIONS & POLISH
-   ═══════════════════════════════════════════════ */
 
 /* Keyframes */
 @keyframes titleFloat {
@@ -570,8 +574,8 @@ canvas {
 	100%     { transform: translateY(0) scale(1); text-shadow: 0 0 30px rgba(255,255,255,0.25), 0 0 80px rgba(255,255,255,0.08); }
 }
 @keyframes subtitleDrift {
-	0%, 100% { opacity: 0.8; letter-spacing: clamp(8px,2vw,22px); text-shadow: 0 0 10px rgba(255,200,150,0.12); }
-	50%      { opacity: 1; letter-spacing: clamp(12px,2.6vw,28px); text-shadow: 0 0 18px rgba(255,200,150,0.25); }
+	0%, 100% { opacity: 0.8; letter-spacing: clamp(10px,2.5vw,26px); text-shadow: 0 0 10px rgba(255,200,150,0.12); }
+	50%      { opacity: 1; letter-spacing: clamp(14px,3vw,32px); text-shadow: 0 0 18px rgba(255,200,150,0.25); }
 }
 @keyframes cardEntrance {
 	from { opacity: 0; transform: translateY(36px) scale(0.92); filter: blur(4px); }
@@ -675,7 +679,7 @@ canvas {
 	transform-origin: center;
 }
 
-/* ─── Screen Transitions ─── */
+/* Screen Transitions */
 .screen {
 	transition: opacity 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
@@ -683,7 +687,7 @@ canvas {
 	animation: screenFadeSlide 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
-/* ─── Title idle animations ─── */
+/* Title idle animations */
 .title {
 	animation: titleFloat 5s ease-in-out infinite;
 	will-change: transform, text-shadow;
@@ -693,12 +697,12 @@ canvas {
 	will-change: opacity, letter-spacing;
 }
 
-/* ─── Section labels entrance ─── */
+/* Section labels entrance */
 .slabel {
 	animation: labelSlide 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) 0.2s both;
 }
 
-/* ─── Paddle cards: smooth hover rise, particles via JS ─── */
+/* Paddle cards: smooth hover rise, particles via JS */
 .pad-card {
 	will-change: transform, box-shadow, filter;
 	transition: box-shadow 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
@@ -757,7 +761,7 @@ canvas {
 	letter-spacing: 10px;
 }
 
-/* ─── Upgrade cards: smooth hover rise, vibrant ─── */
+/* Upgrade cards: smooth hover rise, vibrant */
 .up-card {
 	will-change: transform, box-shadow, filter;
 	transition: box-shadow 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
@@ -831,10 +835,6 @@ canvas {
 }
 /* Neighbor cards dim */
 
-/* ═══════════════════════════════════════════════
-   OPPONENT SELECTION — CLEAN & DISTINCT
-   No wiggle. Smooth slide-up, clean glow, polished.
-   ═══════════════════════════════════════════════ */
 .opp-grid {
 	gap: 22px;
 }
@@ -971,7 +971,7 @@ canvas {
 }
 /* Neighbors dim slightly — but less than pad/up cards */
 
-/* ─── Buttons: polish ─── */
+/* Buttons: polish */
 .btn {
 	transition: all 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
 	position: relative;
@@ -1002,7 +1002,7 @@ canvas {
 	transition-duration: 0.08s;
 }
 
-/* ─── Victory screen ─── */
+/* Victory screen */
 @keyframes vicStarBurst {
 	0%   { transform: scale(0) rotate(0deg); opacity: 0; }
 	40%  { transform: scale(1.2) rotate(180deg); opacity: 1; }
@@ -1093,7 +1093,7 @@ canvas {
 	z-index: 1;
 }
 
-/* ─── Game Over screen ─── */
+/* Game Over screen */
 @keyframes goTitleGlitch {
 	0%, 100% { text-shadow: 0 0 24px rgba(255,80,80,0.2); transform: translate(0); }
 	10%      { text-shadow: -2px 0 #ff4444, 2px 0 #4444ff; transform: translate(-1px, 1px); }
@@ -1142,12 +1142,12 @@ canvas {
 	text-transform: uppercase;
 }
 
-/* ─── Enemy warning: subtle pulse ─── */
+/* Enemy warning: subtle pulse */
 .e-warn {
 	animation: glowBreath 3s ease-in-out infinite;
 }
 
-/* ─── Difficulty badge: entrance ─── */
+/* Difficulty badge: entrance */
 .diff-badge {
 	animation: cardEntrance 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }

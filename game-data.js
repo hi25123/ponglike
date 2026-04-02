@@ -1,4 +1,4 @@
-// ═══ CONSTANTS ═══
+// --- CONSTANTS ---
 export const GW = 800,
 	GH = 500,
 	BALL_SZ = 10,
@@ -93,7 +93,7 @@ export function getRallyMul(hits) {
 	return 1 + extra;
 }
 
-// ═══ DIFFICULTY RATINGS ═══
+// --- DIFFICULTY RATINGS ---
 export const DIFF_RANKS = ["F", "E", "D", "C", "B", "A", "S", "SS", "SSS"];
 export const DIFF_COLORS = {
 	F: "#446644",
@@ -537,7 +537,7 @@ export const TIER_ORDER = [
 	"klein",
 ];
 
-// ═══ PALETTES ═══
+// --- PALETTES ---
 export const PCOL = {
 	classic: { p: "#ffffff", g: "rgba(255,255,255,", t: [1, 1, 1] },
 	oracle: { p: "#44ddff", g: "rgba(68,221,255,", t: [0.27, 0.87, 1] },
@@ -548,7 +548,7 @@ export const PCOL = {
 	voidp: { p: "#ff44aa", g: "rgba(255,68,170,", t: [1, 0.27, 0.67] },
 };
 
-// ═══ PADDLES ═══
+// --- PADDLES ---
 export const PADDLES = [
 	{
 		id: "classic",
@@ -622,7 +622,7 @@ export const PADDLES = [
 	},
 ];
 
-// ═══ ENEMIES with difficulty ═══ (multiple per tier for variety)
+// --- ENEMIES with difficulty --- (multiple per tier for variety)
 export const ENEMIES = [
 	// F-tier
 	{ id: "basic", name: "ROOKIE", tag: "", diff: "F", mod: (c) => { c.aiSpd *= 1.2; c.aiReact *= 0.6; } },
@@ -836,7 +836,7 @@ export function getEnemiesForDiff(diff) {
 	return ENEMIES.filter((e) => e.diff === diff);
 }
 
-// ═══ ENEMY ABILITIES ═══
+// --- ENEMY ABILITIES ---
 // Each ability: id, name, desc, icon, cd (cooldown), dur (active duration), minDiff (minimum rank index to appear)
 export const E_ABILS = {
 	none: { id: "none", name: "", desc: "", icon: "", cd: 999 },
